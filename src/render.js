@@ -11,14 +11,14 @@ function seededRand(seed) {
 function drawDrips(ctx, points, lineWidth, color, seed) {
   if (points.length < 2) return;
   const rand = seededRand(seed);
-  const count = 2 + Math.floor(rand() * 3);
+  const count = 3 + Math.floor(rand() * 4);
   ctx.strokeStyle = color;
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
     const idx = Math.floor(rand() * points.length);
-    const p = points[idx];
-    const dripWidth  = lineWidth * (0.05 + rand() * 0.08);
-    const dripLength = lineWidth * (0.3  + rand() * 1.0);
+    const p   = points[idx];
+    const dripWidth  = lineWidth * (0.04 + rand() * 0.06);
+    const dripLength = lineWidth * (0.18 + rand() * 0.55);
     ctx.lineWidth = Math.max(1, dripWidth);
     ctx.beginPath();
     ctx.moveTo(p.x, p.y + lineWidth / 2);
@@ -27,10 +27,40 @@ function drawDrips(ctx, points, lineWidth, color, seed) {
   }
 }
 
+// Module-level offscreen canvas (reused across frames)
+const _tmp = { canvas: null, ctx: null };
+
+function getTmpCtx(mainCtx) {
+  const { width, height } = mainCtx.canvas;
+  if (!_tmp.canvas) {
+    _tmp.canvas = document.createElement('canvas');
+    _tmp.ctx    = _tmp.canvas.getContext('2d');
+  }
+  if (_tmp.canvas.width !== width || _tmp.canvas.height !== height) {
+    _tmp.canvas.width  = width;
+    _tmp.canvas.height = height;
+  }
+  const tc = _tmp.ctx;
+  tc.save();
+  tc.setTransform(1, 0, 0, 1, 0, 0);
+  tc.clearRect(0, 0, width, height);
+  tc.restore();
+  const t = mainCtx.getTransform();
+  tc.setTransform(t.a, t.b, t.c, t.d, t.e, t.f);
+  return tc;
+}
+
+// Draw fn onto an offscreen canvas, then composite to ctx with a CSS blur.
+// fn receives the target context as its argument.
 function withFeather(ctx, feather, fn) {
-  if (feather > 0) ctx.filter = `blur(${feather}px)`;
-  fn();
-  if (feather > 0) ctx.filter = 'none';
+  if (feather <= 0) { fn(ctx); return; }
+  const tc = getTmpCtx(ctx);
+  fn(tc);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.filter = `blur(${feather}px)`;
+  ctx.drawImage(tc.canvas, 0, 0);
+  ctx.restore();
 }
 
 const SHADOW_ANGLES = {
@@ -111,14 +141,12 @@ function drawExtrusion(ctx, s, lineWidth, brushType, sx, sy, shadowColor, drawFn
 // ─── Tag: flat black, no effects ───────────────────────────────────────────
 
 export function renderTag(ctx, strokes, config) {
-  const { feather, showDrips, brushSize, brushType } = config;
-  setColor(ctx, '#000');
+  const { feather, brushSize, brushType } = config;
   for (const s of strokes) {
     if (s.points.length < 2) continue;
-    const seed = Math.round(s.points[0].x * 7 + s.points[0].y * 13);
-    withFeather(ctx, feather, () => {
-      drawBrush(ctx, s.points, brushSize, brushType);
-      if (showDrips) drawDrips(ctx, s.points, brushSize, '#000000', seed);
+    withFeather(ctx, feather, (c) => {
+      setColor(c, '#000');
+      drawBrush(c, s.points, brushSize, brushType);
     });
   }
 }
@@ -138,33 +166,31 @@ export function renderThrowup(ctx, strokes, config) {
     if (s.points.length < 2) continue;
     const seed = Math.round(s.points[0].x * 7 + s.points[0].y * 13);
 
-    // Shadow layer
-    withFeather(ctx, feather, () => {
+    // Shadow layer (drips only here)
+    withFeather(ctx, feather, (c) => {
       if (shadowAttached && shadowOffset > 0) {
-        drawExtrusion(ctx, s, outlineSize, brushType, sx, sy, shadowColor, drawBlobBrush);
-        if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed);
+        drawExtrusion(c, s, outlineSize, brushType, sx, sy, shadowColor, drawBlobBrush);
+        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
       } else if (shadowOffset > 0) {
-        ctx.save();
-        ctx.translate(sx, sy);
-        setColor(ctx, shadowColor);
-        drawBlobBrush(ctx, s.points, outlineSize);
-        if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed);
-        ctx.restore();
+        c.save();
+        c.translate(sx, sy);
+        setColor(c, shadowColor);
+        drawBlobBrush(c, s.points, outlineSize);
+        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
+        c.restore();
       }
     });
 
     // Outline layer
-    withFeather(ctx, feather, () => {
-      setColor(ctx, outlineColor);
-      drawBlobBrush(ctx, s.points, outlineSize);
-      if (showDrips) drawDrips(ctx, s.points, outlineSize, outlineColor, seed + 1);
+    withFeather(ctx, feather, (c) => {
+      setColor(c, outlineColor);
+      drawBlobBrush(c, s.points, outlineSize);
     });
 
     // Fill layer
-    withFeather(ctx, feather, () => {
-      setColor(ctx, throwupColor);
-      drawBlobBrush(ctx, s.points, brushSize);
-      if (showDrips) drawDrips(ctx, s.points, brushSize, throwupColor, seed + 2);
+    withFeather(ctx, feather, (c) => {
+      setColor(c, throwupColor);
+      drawBlobBrush(c, s.points, brushSize);
     });
   }
 }
@@ -181,34 +207,32 @@ export function renderBurner(ctx, strokes, gradientMode, config) {
   const pad = Math.max(brushSize, outlineSize) / 2;
 
   function shadow(s, seed) {
-    withFeather(ctx, feather, () => {
+    withFeather(ctx, feather, (c) => {
       if (shadowAttached && shadowOffset > 0) {
-        drawExtrusion(ctx, s, outlineSize, brushType, sx, sy, shadowColor);
-        if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed);
+        drawExtrusion(c, s, outlineSize, brushType, sx, sy, shadowColor);
+        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
       } else if (shadowOffset > 0) {
-        ctx.save();
-        ctx.translate(sx, sy);
-        setColor(ctx, shadowColor);
-        drawBrush(ctx, s.points, outlineSize, brushType);
-        if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed);
-        ctx.restore();
+        c.save();
+        c.translate(sx, sy);
+        setColor(c, shadowColor);
+        drawBrush(c, s.points, outlineSize, brushType);
+        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
+        c.restore();
       }
     });
   }
 
-  function outline(s, seed) {
-    withFeather(ctx, feather, () => {
-      setColor(ctx, outlineColor);
-      drawBrush(ctx, s.points, outlineSize, brushType);
-      if (showDrips) drawDrips(ctx, s.points, outlineSize, outlineColor, seed + 1);
+  function outline(s) {
+    withFeather(ctx, feather, (c) => {
+      setColor(c, outlineColor);
+      drawBrush(c, s.points, outlineSize, brushType);
     });
   }
 
-  function fill(s, bounds, seed) {
-    withFeather(ctx, feather, () => {
-      setColor(ctx, makeGradient(ctx, bounds, gradientStart, gradientEnd));
-      drawBrush(ctx, s.points, brushSize, brushType);
-      if (showDrips) drawDrips(ctx, s.points, brushSize, gradientStart, seed + 2);
+  function fill(s, bounds) {
+    withFeather(ctx, feather, (c) => {
+      setColor(c, makeGradient(c, bounds, gradientStart, gradientEnd));
+      drawBrush(c, s.points, brushSize, brushType);
     });
   }
 
@@ -217,13 +241,13 @@ export function renderBurner(ctx, strokes, gradientMode, config) {
       if (s.points.length < 2) continue;
       const seed = Math.round(s.points[0].x * 7 + s.points[0].y * 13);
       shadow(s, seed);
-      outline(s, seed);
-      fill(s, getBoundsFromPoints(s.points, pad), seed);
+      outline(s);
+      fill(s, getBoundsFromPoints(s.points, pad));
     }
   } else {
     const db = getDrawingBounds(strokes, pad);
     for (const s of strokes) { if (s.points.length < 2) continue; shadow(s, Math.round(s.points[0].x * 7 + s.points[0].y * 13)); }
-    for (const s of strokes) { if (s.points.length < 2) continue; outline(s, Math.round(s.points[0].x * 7 + s.points[0].y * 13)); }
-    for (const s of strokes) { if (s.points.length < 2) continue; fill(s, db, Math.round(s.points[0].x * 7 + s.points[0].y * 13)); }
+    for (const s of strokes) { if (s.points.length < 2) continue; outline(s); }
+    for (const s of strokes) { if (s.points.length < 2) continue; fill(s, db); }
   }
 }
