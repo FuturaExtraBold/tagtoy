@@ -1,0 +1,99 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  overflow: hidden;
+  background: #fff;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+canvas {
+  cursor: none;
+  display: block;
+}
+
+.cursor {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #000;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+}
+
+.controls {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font: 12px sans-serif;
+  min-width: 280px;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ctrl-row label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.ctrl-row input[type="range"] {
+  flex: 1;
+  min-width: 80px;
+  accent-color: #333;
+}
+
+.ctrl-row span {
+  min-width: 36px;
+  text-align: right;
+  color: #555;
+}
+
+.ctrl-row input[type="color"] {
+  width: 28px;
+  height: 24px;
+  padding: 1px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.controls select,
+.controls button {
+  font: 12px sans-serif;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: #f0f0f0;
+}

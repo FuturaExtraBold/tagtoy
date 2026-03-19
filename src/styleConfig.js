@@ -1,0 +1,37 @@
+export const STYLE_DEFAULTS = {
+  tag: {
+    brushType:  'round',
+    brushSize:  100,
+    feather:    0,
+    showDrips:  false,
+  },
+
+  throwup: {
+    brushType:      'round',
+    brushSize:      120,
+    shadowOffset:   40,
+    shadowColor:    '#000000',
+    shadowAngle:    '45',
+    shadowAttached: false,
+    outlineSize:    160,
+    outlineColor:   '#000000',
+    throwupColor:   '#ffffff',
+    feather:        0,
+    showDrips:      false,
+  },
+
+  burner: {
+    brushType:      'round',
+    brushSize:      100,
+    shadowOffset:   50,
+    shadowColor:    '#1a1a1a',
+    shadowAngle:    '45',
+    shadowAttached: false,
+    outlineSize:    125,
+    outlineColor:   '#000000',
+    gradientStart:  '#d8d8d8',
+    gradientEnd:    '#2a2a2a',
+    feather:        0,
+    showDrips:      false,
+  },
+};
