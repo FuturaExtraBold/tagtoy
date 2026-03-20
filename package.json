@@ -10,9 +10,11 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "lint:css": "stylelint \"src/**/*.css\"",
-    "format": "prettier --write . && eslint --fix ."
+    "format": "prettier --write . && eslint --fix .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "pixi.js": "^8.17.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -20,6 +22,8 @@
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",
@@ -34,6 +38,7 @@
     "stylelint-config-standard": "^40.0.0",
     "stylelint-order": "^8.1.1",
     "stylelint-scss": "^7.0.0",
+    "typescript": "^5.9.3",
     "vite": "^8.0.1"
   }
 }

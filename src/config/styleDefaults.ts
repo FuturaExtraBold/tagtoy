@@ -1,4 +1,26 @@
-export const STYLE_DEFAULTS = {
+import type { RenderConfig, StyleMode } from "../types/drawing";
+
+type StyleDefaults = {
+  tag: Pick<
+    RenderConfig,
+    | "brushType"
+    | "brushSize"
+    | "showDrips"
+    | "dripCount"
+    | "showOverspray"
+    | "oversprayAmount"
+  >;
+  throwup: Omit<
+    RenderConfig,
+    "gradientStart" | "gradientEnd" | "pressureSensitivity" | "sensitivity"
+  >;
+  burner: Omit<
+    RenderConfig,
+    "throwupColor" | "pressureSensitivity" | "sensitivity"
+  >;
+};
+
+export const STYLE_DEFAULTS: StyleDefaults = {
   tag: {
     brushType: "round",
     brushSize: 100,
@@ -7,7 +29,6 @@ export const STYLE_DEFAULTS = {
     showOverspray: true,
     oversprayAmount: 1,
   },
-
   throwup: {
     brushType: "round",
     brushSize: 120,
@@ -23,7 +44,6 @@ export const STYLE_DEFAULTS = {
     showOverspray: true,
     oversprayAmount: 1,
   },
-
   burner: {
     brushType: "round",
     brushSize: 100,
@@ -41,3 +61,7 @@ export const STYLE_DEFAULTS = {
     oversprayAmount: 1,
   },
 };
+
+export function defaultsForStyle(style: StyleMode): Partial<RenderConfig> {
+  return STYLE_DEFAULTS[style] as Partial<RenderConfig>;
+}
