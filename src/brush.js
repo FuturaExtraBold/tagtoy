@@ -15,18 +15,25 @@ function smoothPoints(points, iterations = 2) {
   return pts;
 }
 
-function np(p) {
-  return Math.min(1, (p.pressure ?? 0.5) * 2);
+// sensitivity 0-10: higher = more dramatic width variation with pressure.
+// sensitivity=0 → uniform (no variation); sensitivity=10 → full raw range (can go near-zero).
+// pow(raw, 0.6) gamma-corrects so typical mid-range Wacom pressure (0.2-0.6) spreads
+// across a wider visual width range rather than bunching at the top.
+function np(p, pressureSensitivity, sensitivity) {
+  if (!pressureSensitivity) return 1.0;
+  const raw = Math.pow(Math.min(1, p.pressure || 0), 0.6);
+  const minWidth = 1 - (sensitivity / 10);
+  return minWidth + (1 - minWidth) * raw;
 }
 
 // ─── Round ─────────────────────────────────────────────────────────────────
 
-function drawRound(ctx, points, lineWidth) {
+function drawRound(ctx, points, lineWidth, pressureSensitivity, sensitivity) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i], p1 = points[i + 1];
-    const pressure = (np(p0) + np(p1)) / 2;
+    const pressure = (np(p0, pressureSensitivity, sensitivity) + np(p1, pressureSensitivity, sensitivity)) / 2;
     ctx.lineWidth = Math.max(1, lineWidth * pressure);
     const fromX = i > 0 ? (points[i - 1].x + p0.x) / 2 : p0.x;
     const fromY = i > 0 ? (points[i - 1].y + p0.y) / 2 : p0.y;
@@ -42,8 +49,8 @@ function drawRound(ctx, points, lineWidth) {
 // ─── Square ────────────────────────────────────────────────────────────────
 // Single smooth path to avoid per-segment square-cap overlaps at corners.
 
-function drawSquare(ctx, points, lineWidth) {
-  const avgPressure = points.reduce((s, p) => s + np(p), 0) / points.length;
+function drawSquare(ctx, points, lineWidth, pressureSensitivity, sensitivity) {
+  const avgPressure = points.reduce((s, p) => s + np(p, pressureSensitivity, sensitivity), 0) / points.length;
   ctx.lineWidth = Math.max(1, lineWidth * avgPressure);
   ctx.lineCap = 'square';
   ctx.lineJoin = 'bevel';
@@ -80,12 +87,12 @@ export function drawBlobBrush(ctx, rawPoints, lineWidth) {
 
 // ─── Public API ────────────────────────────────────────────────────────────
 
-export function drawBrush(ctx, rawPoints, lineWidth, brushType) {
+export function drawBrush(ctx, rawPoints, lineWidth, brushType, pressureSensitivity = false, sensitivity = 10) {
   if (rawPoints.length < 2) return;
   const points = rawPoints.length > 4 ? smoothPoints(rawPoints) : rawPoints;
   if (brushType === 'square') {
-    drawSquare(ctx, points, lineWidth);
+    drawSquare(ctx, points, lineWidth, pressureSensitivity, sensitivity);
   } else {
-    drawRound(ctx, points, lineWidth);
+    drawRound(ctx, points, lineWidth, pressureSensitivity, sensitivity);
   }
 }

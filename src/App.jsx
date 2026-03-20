@@ -21,8 +21,10 @@ export default function App() {
   const [throwupColor,   setThrowupColor]   = useState(THROWUP.throwupColor);
   const [gradientStart,  setGradientStart]  = useState(BURNER.gradientStart);
   const [gradientEnd,    setGradientEnd]    = useState(BURNER.gradientEnd);
-  const [showDrips,      setShowDrips]      = useState(TAG.showDrips);
-  const [dripCount,      setDripCount]      = useState(TAG.dripCount);
+  const [showDrips,         setShowDrips]         = useState(TAG.showDrips);
+  const [dripCount,         setDripCount]         = useState(TAG.dripCount);
+  const [pressureSensitivity, setPressureSensitivity] = useState(false);
+  const [sensitivity,          setSensitivity]        = useState(7);
   const [showOverspray,  setShowOverspray]  = useState(TAG.showOverspray);
   const [oversprayAmount,setOversprayAmount]= useState(TAG.oversprayAmount);
 
@@ -44,9 +46,11 @@ export default function App() {
     throwupColor,
     gradientStart, gradientEnd,
     showDrips, dripCount, showOverspray, oversprayAmount,
+    pressureSensitivity, sensitivity,
   }), [brushType, brushSize, shadowOffset, shadowColor, shadowAngle, shadowAttached,
       outlineSize, outlineColor, throwupColor, gradientStart, gradientEnd,
-      showDrips, dripCount, showOverspray, oversprayAmount]);
+      showDrips, dripCount, showOverspray, oversprayAmount,
+      pressureSensitivity, sensitivity]);
 
   const handleStrokeComplete = useCallback((stroke) => {
     setStrokes(prev => [...prev, stroke]);
@@ -118,11 +122,8 @@ export default function App() {
           </select>
           <select value={bg} onChange={e => setBg(e.target.value)}>
             <option value="">No Background</option>
-            <option value="bricks.jpg">Bricks</option>
-            <option value="bricks-white.jpg">Bricks White</option>
-            <option value="concrete-dark.jpg">Concrete Dark</option>
-            <option value="concrete-light.jpg">Concrete Light</option>
-            <option value="scratch.jpg">Scratch</option>
+            <option value="bricks-white.jpg">Bricks</option>
+            <option value="concrete-light.jpg">Concrete</option>
           </select>
           {isBurner && (
             <label className="check-label">
@@ -174,6 +175,24 @@ export default function App() {
               <input type="range" min={0.5} max={5} step={0.1} value={oversprayAmount}
                 onChange={e => setOversprayAmount(Number(e.target.value))} />
               <span>{oversprayAmount.toFixed(1)}×</span>
+            </label>
+          )}
+        </div>
+
+        {/* Row 3: pressure sensitivity */}
+        <div className="ctrl-row">
+          <label className="check-label">
+            <input type="checkbox"
+              checked={pressureSensitivity}
+              onChange={e => setPressureSensitivity(e.target.checked)}
+            />
+            Pressure
+          </label>
+          {pressureSensitivity && (
+            <label style={{flex:1}}>Sensitivity
+              <input type="range" min={0} max={10} step={1} value={sensitivity}
+                onChange={e => setSensitivity(Number(e.target.value))} />
+              <span>{sensitivity}</span>
             </label>
           )}
         </div>
