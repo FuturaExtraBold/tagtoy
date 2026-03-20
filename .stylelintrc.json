@@ -1,0 +1,37 @@
+{
+  "extends": ["stylelint-config-standard", "stylelint-config-idiomatic-order"],
+  "plugins": ["stylelint-scss", "stylelint-order"],
+  "rules": {
+    "alpha-value-notation": "number",
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "extend",
+          "forward",
+          "function",
+          "if",
+          "else",
+          "include",
+          "mixin",
+          "return",
+          "use"
+        ]
+      }
+    ],
+    "color-hex-length": "long",
+    "import-notation": "string",
+    "selector-class-pattern": null,
+    "media-query-no-invalid": null,
+    "order/order": [
+      ["custom-properties", "declarations", "at-rules", "rules"],
+      { "unspecified": "bottom" }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.scss"],
+      "customSyntax": "postcss-scss"
+    }
+  ]
+}

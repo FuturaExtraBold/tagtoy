@@ -22,18 +22,22 @@ function smoothPoints(points, iterations = 2) {
 function np(p, pressureSensitivity, sensitivity) {
   if (!pressureSensitivity) return 1.0;
   const raw = Math.pow(Math.min(1, p.pressure || 0), 0.6);
-  const minWidth = 1 - (sensitivity / 10);
+  const minWidth = 1 - sensitivity / 10;
   return minWidth + (1 - minWidth) * raw;
 }
 
 // ─── Round ─────────────────────────────────────────────────────────────────
 
 function drawRound(ctx, points, lineWidth, pressureSensitivity, sensitivity) {
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i], p1 = points[i + 1];
-    const pressure = (np(p0, pressureSensitivity, sensitivity) + np(p1, pressureSensitivity, sensitivity)) / 2;
+    const p0 = points[i],
+      p1 = points[i + 1];
+    const pressure =
+      (np(p0, pressureSensitivity, sensitivity) +
+        np(p1, pressureSensitivity, sensitivity)) /
+      2;
     ctx.lineWidth = Math.max(1, lineWidth * pressure);
     const fromX = i > 0 ? (points[i - 1].x + p0.x) / 2 : p0.x;
     const fromY = i > 0 ? (points[i - 1].y + p0.y) / 2 : p0.y;
@@ -50,10 +54,12 @@ function drawRound(ctx, points, lineWidth, pressureSensitivity, sensitivity) {
 // Single smooth path to avoid per-segment square-cap overlaps at corners.
 
 function drawSquare(ctx, points, lineWidth, pressureSensitivity, sensitivity) {
-  const avgPressure = points.reduce((s, p) => s + np(p, pressureSensitivity, sensitivity), 0) / points.length;
+  const avgPressure =
+    points.reduce((s, p) => s + np(p, pressureSensitivity, sensitivity), 0) /
+    points.length;
   ctx.lineWidth = Math.max(1, lineWidth * avgPressure);
-  ctx.lineCap = 'square';
-  ctx.lineJoin = 'bevel';
+  ctx.lineCap = "square";
+  ctx.lineJoin = "bevel";
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   for (let i = 1; i < points.length - 1; i++) {
@@ -70,13 +76,14 @@ function drawSquare(ctx, points, lineWidth, pressureSensitivity, sensitivity) {
 export function drawBlobBrush(ctx, rawPoints, lineWidth) {
   if (rawPoints.length < 2) return;
   const points = rawPoints.length > 4 ? smoothPoints(rawPoints) : rawPoints;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.lineWidth = lineWidth;
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i], p1 = points[i + 1];
+    const p0 = points[i],
+      p1 = points[i + 1];
     const toX = (p0.x + p1.x) / 2;
     const toY = (p0.y + p1.y) / 2;
     ctx.quadraticCurveTo(p0.x, p0.y, toX, toY);
@@ -87,10 +94,17 @@ export function drawBlobBrush(ctx, rawPoints, lineWidth) {
 
 // ─── Public API ────────────────────────────────────────────────────────────
 
-export function drawBrush(ctx, rawPoints, lineWidth, brushType, pressureSensitivity = false, sensitivity = 10) {
+export function drawBrush(
+  ctx,
+  rawPoints,
+  lineWidth,
+  brushType,
+  pressureSensitivity = false,
+  sensitivity = 10,
+) {
   if (rawPoints.length < 2) return;
   const points = rawPoints.length > 4 ? smoothPoints(rawPoints) : rawPoints;
-  if (brushType === 'square') {
+  if (brushType === "square") {
     drawSquare(ctx, points, lineWidth, pressureSensitivity, sensitivity);
   } else {
     drawRound(ctx, points, lineWidth, pressureSensitivity, sensitivity);

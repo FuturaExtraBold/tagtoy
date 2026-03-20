@@ -1,7 +1,13 @@
-import { useRef, useEffect, useCallback } from 'react';
-import { renderTag, renderThrowup, renderBurner } from './render.js';
+import { useRef, useEffect, useCallback } from "react";
+import { renderTag, renderThrowup, renderBurner } from "./render.js";
 
-export default function Canvas({ strokes, style, gradientMode, renderConfig, onStrokeComplete }) {
+export default function Canvas({
+  strokes,
+  style,
+  gradientMode,
+  renderConfig,
+  onStrokeComplete,
+}) {
   const canvasRef = useRef(null);
   const isDrawing = useRef(false);
   const currentPoints = useRef([]);
@@ -20,17 +26,18 @@ export default function Canvas({ strokes, style, gradientMode, renderConfig, onS
   const doRedraw = useCallback((committed, activePts, s, gm, cfg) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
-    const all = activePts && activePts.length > 1
-      ? [...committed, { points: activePts }]
-      : committed;
+    const all =
+      activePts && activePts.length > 1
+        ? [...committed, { points: activePts }]
+        : committed;
 
-    if (s === 'tag') {
+    if (s === "tag") {
       renderTag(ctx, all, cfg);
-    } else if (s === 'throwup') {
+    } else if (s === "throwup") {
       renderThrowup(ctx, all, cfg);
     } else {
       renderBurner(ctx, all, gm, cfg);
@@ -58,9 +65,15 @@ export default function Canvas({ strokes, style, gradientMode, renderConfig, onS
     canvas.height = window.innerHeight * dpr;
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
-    doRedraw(strokesRef.current, currentPoints.current, styleRef.current, gradientModeRef.current, renderConfigRef.current);
+    doRedraw(
+      strokesRef.current,
+      currentPoints.current,
+      styleRef.current,
+      gradientModeRef.current,
+      renderConfigRef.current,
+    );
   }, [doRedraw]);
 
   useEffect(() => {
@@ -114,7 +127,7 @@ export default function Canvas({ strokes, style, gradientMode, renderConfig, onS
       onPointerMove={onPointerMove}
       onPointerUp={finishStroke}
       onPointerLeave={finishStroke}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: "none" }}
     />
   );
 }
