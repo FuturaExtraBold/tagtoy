@@ -1,8 +1,17 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
   overflow: hidden;
-  background: #fff;
+  background-color: #fff;
+}
+
+body.has-bg canvas {
+  mix-blend-mode: multiply;
+  filter: saturate(2);
 }
 
 #root {

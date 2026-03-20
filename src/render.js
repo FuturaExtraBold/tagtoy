@@ -8,10 +8,10 @@ function seededRand(seed) {
   };
 }
 
-function drawDrips(ctx, points, lineWidth, color, seed) {
+function drawDrips(ctx, points, lineWidth, color, seed, dripCount) {
   if (points.length < 2) return;
   const rand = seededRand(seed);
-  const count = 3 + Math.floor(rand() * 4);
+  const count = dripCount;
   ctx.strokeStyle = color;
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
@@ -27,40 +27,26 @@ function drawDrips(ctx, points, lineWidth, color, seed) {
   }
 }
 
-// Module-level offscreen canvas (reused across frames)
-const _tmp = { canvas: null, ctx: null };
-
-function getTmpCtx(mainCtx) {
-  const { width, height } = mainCtx.canvas;
-  if (!_tmp.canvas) {
-    _tmp.canvas = document.createElement('canvas');
-    _tmp.ctx    = _tmp.canvas.getContext('2d');
+// Scatter small dots just outside the stroke perimeter — spray-paint overspray.
+// oversprayAmount scales both spread distance and dot size (1 = default, 2 = double, etc.)
+function drawOverspray(ctx, points, lineWidth, oversprayAmount, seed) {
+  const rand = seededRand(seed ^ 0xdeadbeef);
+  const step = Math.max(1, Math.floor(points.length / 24));
+  for (let i = 0; i < points.length; i += step) {
+    const p = points[i];
+    const splats = Math.floor((3 + rand() * 5) * Math.sqrt(oversprayAmount));
+    for (let j = 0; j < splats; j++) {
+      const angle = rand() * Math.PI * 2;
+      const dist  = lineWidth * 0.5 + rand() * lineWidth * 0.2 * oversprayAmount;
+      const size  = (0.4 + rand() * 1.8) * oversprayAmount;
+      ctx.save();
+      ctx.globalAlpha *= (0.07 + rand() * 0.18);
+      ctx.beginPath();
+      ctx.arc(p.x + Math.cos(angle) * dist, p.y + Math.sin(angle) * dist, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
-  if (_tmp.canvas.width !== width || _tmp.canvas.height !== height) {
-    _tmp.canvas.width  = width;
-    _tmp.canvas.height = height;
-  }
-  const tc = _tmp.ctx;
-  tc.save();
-  tc.setTransform(1, 0, 0, 1, 0, 0);
-  tc.clearRect(0, 0, width, height);
-  tc.restore();
-  const t = mainCtx.getTransform();
-  tc.setTransform(t.a, t.b, t.c, t.d, t.e, t.f);
-  return tc;
-}
-
-// Draw fn onto an offscreen canvas, then composite to ctx with a CSS blur.
-// fn receives the target context as its argument.
-function withFeather(ctx, feather, fn) {
-  if (feather <= 0) { fn(ctx); return; }
-  const tc = getTmpCtx(ctx);
-  fn(tc);
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.filter = `blur(${feather}px)`;
-  ctx.drawImage(tc.canvas, 0, 0);
-  ctx.restore();
 }
 
 const SHADOW_ANGLES = {
@@ -141,13 +127,13 @@ function drawExtrusion(ctx, s, lineWidth, brushType, sx, sy, shadowColor, drawFn
 // ─── Tag: flat black, no effects ───────────────────────────────────────────
 
 export function renderTag(ctx, strokes, config) {
-  const { feather, brushSize, brushType } = config;
+  const { brushSize, brushType, showOverspray, oversprayAmount } = config;
   for (const s of strokes) {
     if (s.points.length < 2) continue;
-    withFeather(ctx, feather, (c) => {
-      setColor(c, '#000');
-      drawBrush(c, s.points, brushSize, brushType);
-    });
+    const seed = Math.round(s.points[0].x * 7 + s.points[0].y * 13);
+    setColor(ctx, '#000');
+    drawBrush(ctx, s.points, brushSize, brushType);
+    if (showOverspray) drawOverspray(ctx, s.points, brushSize, oversprayAmount, seed);
   }
 }
 
@@ -158,7 +144,7 @@ export function renderThrowup(ctx, strokes, config) {
   if (!strokes.length) return;
   const { brushSize, shadowOffset, shadowColor, shadowAttached,
           outlineSize, outlineColor, throwupColor, brushType,
-          feather, showDrips } = config;
+          showDrips, dripCount, showOverspray, oversprayAmount } = config;
   const [sx, sy] = shadowCoords(config);
 
   const reversed = [...strokes].reverse();
@@ -166,32 +152,28 @@ export function renderThrowup(ctx, strokes, config) {
     if (s.points.length < 2) continue;
     const seed = Math.round(s.points[0].x * 7 + s.points[0].y * 13);
 
-    // Shadow layer (drips only here)
-    withFeather(ctx, feather, (c) => {
-      if (shadowAttached && shadowOffset > 0) {
-        drawExtrusion(c, s, outlineSize, brushType, sx, sy, shadowColor, drawBlobBrush);
-        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
-      } else if (shadowOffset > 0) {
-        c.save();
-        c.translate(sx, sy);
-        setColor(c, shadowColor);
-        drawBlobBrush(c, s.points, outlineSize);
-        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
-        c.restore();
-      }
-    });
+    // Shadow layer
+    if (shadowAttached && shadowOffset > 0) {
+      drawExtrusion(ctx, s, outlineSize, brushType, sx, sy, shadowColor, drawBlobBrush);
+      if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed, dripCount);
+    } else if (shadowOffset > 0) {
+      ctx.save();
+      ctx.translate(sx, sy);
+      setColor(ctx, shadowColor);
+      drawBlobBrush(ctx, s.points, outlineSize);
+      if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed, dripCount);
+      ctx.restore();
+    }
 
     // Outline layer
-    withFeather(ctx, feather, (c) => {
-      setColor(c, outlineColor);
-      drawBlobBrush(c, s.points, outlineSize);
-    });
+    setColor(ctx, outlineColor);
+    drawBlobBrush(ctx, s.points, outlineSize);
+    if (showOverspray) drawOverspray(ctx, s.points, outlineSize, oversprayAmount, seed);
 
     // Fill layer
-    withFeather(ctx, feather, (c) => {
-      setColor(c, throwupColor);
-      drawBlobBrush(c, s.points, brushSize);
-    });
+    setColor(ctx, throwupColor);
+    drawBlobBrush(ctx, s.points, brushSize);
+    if (showOverspray) drawOverspray(ctx, s.points, brushSize, oversprayAmount, seed + 100);
   }
 }
 
@@ -202,38 +184,34 @@ export function renderBurner(ctx, strokes, gradientMode, config) {
 
   const { brushSize, shadowOffset, shadowColor, shadowAttached,
           outlineSize, outlineColor, gradientStart, gradientEnd, brushType,
-          feather, showDrips } = config;
+          showDrips, dripCount, showOverspray, oversprayAmount } = config;
   const [sx, sy] = shadowCoords(config);
   const pad = Math.max(brushSize, outlineSize) / 2;
 
   function shadow(s, seed) {
-    withFeather(ctx, feather, (c) => {
-      if (shadowAttached && shadowOffset > 0) {
-        drawExtrusion(c, s, outlineSize, brushType, sx, sy, shadowColor);
-        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
-      } else if (shadowOffset > 0) {
-        c.save();
-        c.translate(sx, sy);
-        setColor(c, shadowColor);
-        drawBrush(c, s.points, outlineSize, brushType);
-        if (showDrips) drawDrips(c, s.points, outlineSize, shadowColor, seed);
-        c.restore();
-      }
-    });
+    if (shadowAttached && shadowOffset > 0) {
+      drawExtrusion(ctx, s, outlineSize, brushType, sx, sy, shadowColor);
+      if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed, dripCount);
+    } else if (shadowOffset > 0) {
+      ctx.save();
+      ctx.translate(sx, sy);
+      setColor(ctx, shadowColor);
+      drawBrush(ctx, s.points, outlineSize, brushType);
+      if (showDrips) drawDrips(ctx, s.points, outlineSize, shadowColor, seed, dripCount);
+      ctx.restore();
+    }
   }
 
-  function outline(s) {
-    withFeather(ctx, feather, (c) => {
-      setColor(c, outlineColor);
-      drawBrush(c, s.points, outlineSize, brushType);
-    });
+  function outline(s, seed) {
+    setColor(ctx, outlineColor);
+    drawBrush(ctx, s.points, outlineSize, brushType);
+    if (showOverspray) drawOverspray(ctx, s.points, outlineSize, oversprayAmount, seed);
   }
 
-  function fill(s, bounds) {
-    withFeather(ctx, feather, (c) => {
-      setColor(c, makeGradient(c, bounds, gradientStart, gradientEnd));
-      drawBrush(c, s.points, brushSize, brushType);
-    });
+  function fill(s, bounds, seed) {
+    setColor(ctx, makeGradient(ctx, bounds, gradientStart, gradientEnd));
+    drawBrush(ctx, s.points, brushSize, brushType);
+    if (showOverspray) drawOverspray(ctx, s.points, brushSize, oversprayAmount, seed + 100);
   }
 
   if (gradientMode === 'overlay') {
@@ -241,13 +219,13 @@ export function renderBurner(ctx, strokes, gradientMode, config) {
       if (s.points.length < 2) continue;
       const seed = Math.round(s.points[0].x * 7 + s.points[0].y * 13);
       shadow(s, seed);
-      outline(s);
-      fill(s, getBoundsFromPoints(s.points, pad));
+      outline(s, seed);
+      fill(s, getBoundsFromPoints(s.points, pad), seed);
     }
   } else {
     const db = getDrawingBounds(strokes, pad);
     for (const s of strokes) { if (s.points.length < 2) continue; shadow(s, Math.round(s.points[0].x * 7 + s.points[0].y * 13)); }
-    for (const s of strokes) { if (s.points.length < 2) continue; outline(s); }
-    for (const s of strokes) { if (s.points.length < 2) continue; fill(s, db); }
+    for (const s of strokes) { if (s.points.length < 2) continue; outline(s, Math.round(s.points[0].x * 7 + s.points[0].y * 13)); }
+    for (const s of strokes) { if (s.points.length < 2) continue; fill(s, db, Math.round(s.points[0].x * 7 + s.points[0].y * 13)); }
   }
 }

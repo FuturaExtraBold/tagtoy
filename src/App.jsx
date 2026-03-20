@@ -8,6 +8,7 @@ export default function App() {
   const [strokes, setStrokes] = useState([]);
   const [style, setStyle] = useState('tag');
   const [gradientMode, setGradientMode] = useState('overlay');
+  const [bg, setBg] = useState('');
 
   const [brushType,      setBrushType]      = useState(TAG.brushType);
   const [brushSize,      setBrushSize]      = useState(TAG.brushSize);
@@ -20,8 +21,10 @@ export default function App() {
   const [throwupColor,   setThrowupColor]   = useState(THROWUP.throwupColor);
   const [gradientStart,  setGradientStart]  = useState(BURNER.gradientStart);
   const [gradientEnd,    setGradientEnd]    = useState(BURNER.gradientEnd);
-  const [feather,        setFeather]        = useState(TAG.feather);
   const [showDrips,      setShowDrips]      = useState(TAG.showDrips);
+  const [dripCount,      setDripCount]      = useState(TAG.dripCount);
+  const [showOverspray,  setShowOverspray]  = useState(TAG.showOverspray);
+  const [oversprayAmount,setOversprayAmount]= useState(TAG.oversprayAmount);
 
   const cursorRef = useRef(null);
 
@@ -40,14 +43,29 @@ export default function App() {
     outlineSize, outlineColor,
     throwupColor,
     gradientStart, gradientEnd,
-    feather, showDrips,
+    showDrips, dripCount, showOverspray, oversprayAmount,
   }), [brushType, brushSize, shadowOffset, shadowColor, shadowAngle, shadowAttached,
       outlineSize, outlineColor, throwupColor, gradientStart, gradientEnd,
-      feather, showDrips]);
+      showDrips, dripCount, showOverspray, oversprayAmount]);
 
   const handleStrokeComplete = useCallback((stroke) => {
     setStrokes(prev => [...prev, stroke]);
   }, []);
+
+  // Background texture
+  useEffect(() => {
+    if (bg) {
+      document.body.style.backgroundImage = `url(/backgrounds/${bg})`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+      document.body.classList.add('has-bg');
+    } else {
+      document.body.style.backgroundImage = '';
+      document.body.style.backgroundSize = '';
+      document.body.style.backgroundPosition = '';
+      document.body.classList.remove('has-bg');
+    }
+  }, [bg]);
 
   // Custom cursor
   useEffect(() => {
@@ -98,6 +116,14 @@ export default function App() {
             <option value="throwup">Throwup</option>
             <option value="burner">Burner</option>
           </select>
+          <select value={bg} onChange={e => setBg(e.target.value)}>
+            <option value="">No Background</option>
+            <option value="bricks.jpg">Bricks</option>
+            <option value="bricks-white.jpg">Bricks White</option>
+            <option value="concrete-dark.jpg">Concrete Dark</option>
+            <option value="concrete-light.jpg">Concrete Light</option>
+            <option value="scratch.jpg">Scratch</option>
+          </select>
           {isBurner && (
             <label className="check-label">
               <input type="checkbox"
@@ -122,11 +148,6 @@ export default function App() {
               onChange={e => handleBrushSize(Number(e.target.value))} />
             <span>{brushSize}px</span>
           </label>
-          <label style={{flex:1}}>Feather
-            <input type="range" min={0} max={20} value={feather}
-              onChange={e => setFeather(Number(e.target.value))} />
-            <span>{feather}px</span>
-          </label>
           <label className="check-label">
             <input type="checkbox"
               checked={showDrips}
@@ -134,6 +155,27 @@ export default function App() {
             />
             Drips
           </label>
+          {showDrips && (
+            <label style={{flex:1}}>
+              <input type="range" min={1} max={20} value={dripCount}
+                onChange={e => setDripCount(Number(e.target.value))} />
+              <span>{dripCount}</span>
+            </label>
+          )}
+          <label className="check-label">
+            <input type="checkbox"
+              checked={showOverspray}
+              onChange={e => setShowOverspray(e.target.checked)}
+            />
+            Overspray
+          </label>
+          {showOverspray && (
+            <label style={{flex:1}}>
+              <input type="range" min={0.5} max={5} step={0.1} value={oversprayAmount}
+                onChange={e => setOversprayAmount(Number(e.target.value))} />
+              <span>{oversprayAmount.toFixed(1)}×</span>
+            </label>
+          )}
         </div>
 
         {hasEffects && (<>

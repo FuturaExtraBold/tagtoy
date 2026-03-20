@@ -1,9 +1,11 @@
 export const STYLE_DEFAULTS = {
   tag: {
-    brushType:  'round',
-    brushSize:  100,
-    feather:    0,
-    showDrips:  false,
+    brushType:      'round',
+    brushSize:      100,
+    showDrips:      false,
+    dripCount:      5,
+    showOverspray:  true,
+    oversprayAmount: 1,
   },
 
   throwup: {
@@ -16,8 +18,10 @@ export const STYLE_DEFAULTS = {
     outlineSize:    160,
     outlineColor:   '#000000',
     throwupColor:   '#ffffff',
-    feather:        0,
     showDrips:      false,
+    dripCount:      5,
+    showOverspray:  true,
+    oversprayAmount: 1,
   },
 
   burner: {
@@ -31,7 +35,9 @@ export const STYLE_DEFAULTS = {
     outlineColor:   '#000000',
     gradientStart:  '#d8d8d8',
     gradientEnd:    '#2a2a2a',
-    feather:        0,
     showDrips:      false,
+    dripCount:      5,
+    showOverspray:  true,
+    oversprayAmount: 1,
   },
 };
