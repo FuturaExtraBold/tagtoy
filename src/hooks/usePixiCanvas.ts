@@ -1,11 +1,13 @@
-import { Application, Container, Graphics } from "pixi.js";
-import { type RefObject, useEffect, useLayoutEffect, useRef } from "react";
-
+import { Application, Container } from "pixi.js";
 import {
-  renderBurner,
-  renderTag,
-  renderThrowup,
-} from "../renderer/pixiRenderer";
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+
+import { createStyleDisplay } from "../renderer/pixiRenderer";
 import type {
   GradientMode,
   Point,
@@ -22,6 +24,20 @@ interface PixiCanvasConfig {
   onStrokeComplete: (stroke: Stroke) => void;
 }
 
+const DRIP_ANIMATION_MS = 650;
+
+type AnimatingStroke = {
+  stroke: Stroke;
+  startedAt: number;
+};
+
+function destroyChildren(container: Container): void {
+  const children = container.removeChildren();
+  for (const child of children) {
+    child.destroy({ children: true });
+  }
+}
+
 export function usePixiCanvas(
   containerRef: RefObject<HTMLDivElement | null>,
   config: PixiCanvasConfig,
@@ -32,12 +48,144 @@ export function usePixiCanvas(
   });
 
   const appRef = useRef<Application | null>(null);
+  const transientUnderlayRef = useRef<Container | null>(null);
   const committedRef = useRef<Container | null>(null);
-  const activeGraphicsRef = useRef<Graphics | null>(null);
+  const transientOverlayRef = useRef<Container | null>(null);
   const isReadyRef = useRef(false);
   const isDrawingRef = useRef(false);
   const currentPointsRef = useRef<Point[]>([]);
-  const committedGraphicsListRef = useRef<Graphics[]>([]);
+  const animatingStrokesRef = useRef<AnimatingStroke[]>([]);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const rebuildScene = useCallback(() => {
+    if (
+      !isReadyRef.current ||
+      !transientUnderlayRef.current ||
+      !committedRef.current ||
+      !transientOverlayRef.current
+    ) {
+      return;
+    }
+
+    const { strokes, style, gradientMode, renderConfig } = configRef.current;
+    const underlay = transientUnderlayRef.current;
+    const committed = committedRef.current;
+    const overlay = transientOverlayRef.current;
+    const now = performance.now();
+
+    destroyChildren(underlay);
+    destroyChildren(committed);
+    destroyChildren(overlay);
+
+    animatingStrokesRef.current = animatingStrokesRef.current.filter(
+      ({ stroke, startedAt }) =>
+        strokes.includes(stroke) && now - startedAt < DRIP_ANIMATION_MS,
+    );
+
+    const animatingStrokeSet = new Set(
+      animatingStrokesRef.current.map(({ stroke }) => stroke),
+    );
+    const settledStrokes = strokes.filter(
+      (stroke) => !animatingStrokeSet.has(stroke),
+    );
+
+    if (settledStrokes.length > 0) {
+      if (style === "burner" && gradientMode === "combined") {
+        committed.addChild(
+          createStyleDisplay(style, settledStrokes, gradientMode, renderConfig),
+        );
+      } else {
+        const orderedSettledStrokes =
+          style === "throwup" ? [...settledStrokes].reverse() : settledStrokes;
+
+        for (const stroke of orderedSettledStrokes) {
+          committed.addChild(
+            createStyleDisplay(style, [stroke], gradientMode, renderConfig),
+          );
+        }
+      }
+    }
+
+    if (style === "throwup") {
+      if (currentPointsRef.current.length > 1) {
+        underlay.addChild(
+          createStyleDisplay(
+            style,
+            [{ points: [...currentPointsRef.current] }],
+            gradientMode,
+            renderConfig,
+            { includeDrips: false },
+          ),
+        );
+      }
+
+      for (const animation of [...animatingStrokesRef.current].reverse()) {
+        underlay.addChild(
+          createStyleDisplay(
+            style,
+            [animation.stroke],
+            gradientMode,
+            renderConfig,
+            {
+              dripProgress: Math.min(
+                1,
+                (now - animation.startedAt) / DRIP_ANIMATION_MS,
+              ),
+            },
+          ),
+        );
+      }
+    } else {
+      for (const animation of animatingStrokesRef.current) {
+        overlay.addChild(
+          createStyleDisplay(
+            style,
+            [animation.stroke],
+            gradientMode,
+            renderConfig,
+            {
+              dripProgress: Math.min(
+                1,
+                (now - animation.startedAt) / DRIP_ANIMATION_MS,
+              ),
+            },
+          ),
+        );
+      }
+
+      if (currentPointsRef.current.length > 1) {
+        overlay.addChild(
+          createStyleDisplay(
+            style,
+            [{ points: [...currentPointsRef.current] }],
+            gradientMode,
+            renderConfig,
+            { includeDrips: false },
+          ),
+        );
+      }
+    }
+  }, []);
+
+  const startAnimationLoop = useCallback(() => {
+    if (
+      animationFrameRef.current !== null ||
+      animatingStrokesRef.current.length === 0
+    ) {
+      return;
+    }
+
+    const tick = () => {
+      animationFrameRef.current = null;
+      rebuildScene();
+
+      if (animatingStrokesRef.current.length > 0) {
+        animationFrameRef.current = window.requestAnimationFrame(tick);
+      }
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(tick);
+  }, [rebuildScene]);
 
   // PixiJS init — PixiJS creates its own <canvas>, we append it to the container.
   // This avoids the StrictMode WebGL context-loss problem: each cycle gets its
@@ -47,7 +195,9 @@ export function usePixiCanvas(
     if (!container) return;
 
     const app = new Application();
+    const transientUnderlay = new Container();
     const committed = new Container();
+    const transientOverlay = new Container();
     let initCompleted = false;
     let cleanupCalled = false;
 
@@ -77,11 +227,16 @@ export function usePixiCanvas(
       canvas.style.touchAction = "none";
       container!.appendChild(canvas);
 
+      app.stage.addChild(transientUnderlay);
       app.stage.addChild(committed);
+      app.stage.addChild(transientOverlay);
       appRef.current = app;
+      transientUnderlayRef.current = transientUnderlay;
       committedRef.current = committed;
+      transientOverlayRef.current = transientOverlay;
       window.addEventListener("resize", handleResize);
       isReadyRef.current = true;
+      rebuildScene();
     }
 
     init().catch(console.error);
@@ -100,42 +255,20 @@ export function usePixiCanvas(
       // If init hasn't completed, the async init() will call destroy() when it resolves.
 
       appRef.current = null;
+      transientUnderlayRef.current = null;
       committedRef.current = null;
-      activeGraphicsRef.current = null;
+      transientOverlayRef.current = null;
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [containerRef, rebuildScene]);
 
   // Rebuild committed strokes after every render that changes strokes/config.
   useEffect(() => {
-    if (!isReadyRef.current || !committedRef.current) return;
-
-    const { strokes, style, gradientMode, renderConfig } = configRef.current;
-    const committed = committedRef.current;
-
-    committed.removeChildren();
-    committedGraphicsListRef.current = [];
-
-    if (strokes.length === 0) return;
-
-    if (style === "burner" && gradientMode === "combined") {
-      const g = new Graphics();
-      renderBurner(g, strokes, gradientMode, renderConfig);
-      committed.addChild(g);
-      committedGraphicsListRef.current = [g];
-    } else {
-      for (const s of strokes) {
-        const g = new Graphics();
-        if (style === "tag") {
-          renderTag(g, [s], renderConfig);
-        } else if (style === "throwup") {
-          renderThrowup(g, [s], renderConfig);
-        } else {
-          renderBurner(g, [s], gradientMode, renderConfig);
-        }
-        committed.addChild(g);
-        committedGraphicsListRef.current.push(g);
-      }
-    }
+    rebuildScene();
+    startAnimationLoop();
   });
 
   // Pointer events — attached to the PixiJS-owned canvas once it exists.
@@ -158,49 +291,37 @@ export function usePixiCanvas(
       isDrawingRef.current = true;
       currentPointsRef.current = [getPoint(e)];
       canvas!.setPointerCapture(e.pointerId);
-
-      const active = new Graphics();
-      activeGraphicsRef.current = active;
-      appRef.current.stage.addChild(active);
+      rebuildScene();
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      if (!isDrawingRef.current || !activeGraphicsRef.current) return;
+      if (!isDrawingRef.current) return;
       currentPointsRef.current = [...currentPointsRef.current, getPoint(e)];
-
-      const pts = currentPointsRef.current;
-      if (pts.length < 2) return;
-
-      const { style, gradientMode, renderConfig } = configRef.current;
-      const active = activeGraphicsRef.current;
-      active.clear();
-
-      const preview: Stroke = { points: pts };
-      if (style === "tag") {
-        renderTag(active, [preview], renderConfig);
-      } else if (style === "throwup") {
-        renderThrowup(active, [preview], renderConfig);
-      } else {
-        renderBurner(active, [preview], gradientMode, renderConfig);
-      }
+      rebuildScene();
     };
 
     const finishStroke = () => {
       if (!isDrawingRef.current) return;
       isDrawingRef.current = false;
-
-      if (activeGraphicsRef.current && appRef.current) {
-        appRef.current.stage.removeChild(activeGraphicsRef.current);
-        activeGraphicsRef.current.destroy();
-        activeGraphicsRef.current = null;
-      }
-
-      if (currentPointsRef.current.length > 1) {
-        configRef.current.onStrokeComplete({
-          points: [...currentPointsRef.current],
-        });
-      }
+      const finishedPoints = [...currentPointsRef.current];
       currentPointsRef.current = [];
+
+      if (finishedPoints.length > 1) {
+        const stroke = { points: finishedPoints };
+        const { renderConfig, style } = configRef.current;
+
+        if (renderConfig.showDrips && style !== "tag") {
+          animatingStrokesRef.current.push({
+            stroke,
+            startedAt: performance.now(),
+          });
+        }
+
+        configRef.current.onStrokeComplete(stroke);
+      }
+
+      rebuildScene();
+      startAnimationLoop();
     };
 
     // Poll until PixiJS finishes its async init and appends the canvas.
@@ -224,5 +345,5 @@ export function usePixiCanvas(
         canvas.removeEventListener("pointerleave", finishStroke);
       }
     };
-  }, []);  
+  }, [rebuildScene, startAnimationLoop]);
 }

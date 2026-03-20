@@ -21,6 +21,14 @@ export interface RenderConfig {
   dripCount: number;
   showOverspray: boolean;
   oversprayAmount: number;
+  showInnerAccent: boolean;
+  innerAccentAmount: number;
+  innerAccentSize: number;
+  innerAccentColor: string;
+  showBackAccent: boolean;
+  backAccentAmount: number;
+  backAccentSize: number;
+  backAccentColor: string;
   pressureSensitivity: boolean;
   sensitivity: number;
 }

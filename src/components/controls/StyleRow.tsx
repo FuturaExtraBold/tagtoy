@@ -1,52 +1,40 @@
 import { useCanvas } from "../../contexts/CanvasContext";
 
 export function StyleRow() {
-  const {
-    activeStyle,
-    gradientMode,
-    background,
-    setStyle,
-    setGradientMode,
-    setBackground,
-    undo,
-    clear,
-  } = useCanvas();
-  const isBurner = activeStyle === "burner";
+  const { activeStyle, background, setStyle, setBackground } = useCanvas();
 
   return (
-    <div className="ctrl-row">
-      <select
-        value={activeStyle}
-        onChange={(e) =>
-          setStyle(e.target.value as "tag" | "throwup" | "burner")
-        }
-      >
-        <option value="tag">Tag</option>
-        <option value="throwup">Throwup</option>
-        <option value="burner">Burner</option>
-      </select>
-      <select
-        value={background}
-        onChange={(e) => setBackground(e.target.value)}
-      >
-        <option value="">No Background</option>
-        <option value="bricks-white.jpg">Bricks</option>
-        <option value="concrete-light.jpg">Concrete</option>
-      </select>
-      {isBurner && (
-        <label className="check-label">
-          <input
-            type="checkbox"
-            checked={gradientMode === "combined"}
+    <div className="controls__primary">
+      <label className="ctrl-field">
+        <span className="ctrl-field__label">Style</span>
+        <div className="select-wrap">
+          <select
+            aria-label="Style"
+            value={activeStyle}
             onChange={(e) =>
-              setGradientMode(e.target.checked ? "combined" : "overlay")
+              setStyle(e.target.value as "tag" | "throwup" | "burner")
             }
-          />
-          Combined
-        </label>
-      )}
-      <button onClick={undo}>Undo</button>
-      <button onClick={clear}>Clear</button>
+          >
+            <option value="tag">Tag</option>
+            <option value="throwup">Throwup</option>
+            <option value="burner">Burner</option>
+          </select>
+        </div>
+      </label>
+      <label className="ctrl-field">
+        <span className="ctrl-field__label">Background</span>
+        <div className="select-wrap">
+          <select
+            aria-label="Background"
+            value={background}
+            onChange={(e) => setBackground(e.target.value)}
+          >
+            <option value="">No Background</option>
+            <option value="bricks-white.jpg">Bricks</option>
+            <option value="concrete-light.jpg">Concrete</option>
+          </select>
+        </div>
+      </label>
     </div>
   );
 }
