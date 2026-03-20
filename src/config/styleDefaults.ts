@@ -9,14 +9,6 @@ type StyleDefaults = {
     | "dripCount"
     | "showOverspray"
     | "oversprayAmount"
-    | "showInnerAccent"
-    | "innerAccentAmount"
-    | "innerAccentSize"
-    | "innerAccentColor"
-    | "showBackAccent"
-    | "backAccentAmount"
-    | "backAccentSize"
-    | "backAccentColor"
   >;
   throwup: Omit<
     RenderConfig,
@@ -36,14 +28,6 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     dripCount: 5,
     showOverspray: true,
     oversprayAmount: 1,
-    showInnerAccent: false,
-    innerAccentAmount: 1,
-    innerAccentSize: 1,
-    innerAccentColor: "#000000",
-    showBackAccent: false,
-    backAccentAmount: 1,
-    backAccentSize: 1,
-    backAccentColor: "#000000",
   },
   throwup: {
     brushType: "round",
@@ -59,14 +43,6 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     dripCount: 5,
     showOverspray: true,
     oversprayAmount: 1,
-    showInnerAccent: false,
-    innerAccentAmount: 1,
-    innerAccentSize: 1,
-    innerAccentColor: "#000000",
-    showBackAccent: false,
-    backAccentAmount: 1,
-    backAccentSize: 1,
-    backAccentColor: "#000000",
   },
   burner: {
     brushType: "round",
@@ -83,14 +59,6 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     dripCount: 5,
     showOverspray: true,
     oversprayAmount: 1,
-    showInnerAccent: false,
-    innerAccentAmount: 1,
-    innerAccentSize: 1,
-    innerAccentColor: "#000000",
-    showBackAccent: false,
-    backAccentAmount: 1,
-    backAccentSize: 1,
-    backAccentColor: "#1a1a1a",
   },
 };
 

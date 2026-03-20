@@ -1,7 +1,6 @@
 import { useId, useState } from "react";
 
 import { useCanvas } from "../../contexts/CanvasContext";
-import { AccentRow } from "./AccentRow";
 import { BrushRow } from "./BrushRow";
 import { FillRow } from "./FillRow";
 import { OutlineRow } from "./OutlineRow";
@@ -15,7 +14,7 @@ export function ControlPanel() {
   const [isExpanded, setIsExpanded] = useState(false);
   const advancedControlsId = useId();
   const advancedSummary = hasEffects
-    ? "Brush, pressure, shadow, outline, fill, and accent controls live below."
+    ? "Brush, pressure, shadow, outline, and fill controls live below."
     : "Brush and pressure controls live below.";
 
   return (
@@ -40,7 +39,9 @@ export function ControlPanel() {
             className={`controls__caret${isExpanded ? " is-open" : ""}`}
           />
           <span className="controls__accordion-copy">
-            <span className="controls__accordion-label">More controls below</span>
+            <span className="controls__accordion-label">
+              More controls below
+            </span>
             <span className="controls__accordion-note">{advancedSummary}</span>
           </span>
         </button>
@@ -54,7 +55,6 @@ export function ControlPanel() {
           {hasEffects && <ShadowRow />}
           {hasEffects && <OutlineRow />}
           {hasEffects && <FillRow />}
-          {hasEffects && <AccentRow />}
         </div>
         <div className="controls__footer">
           <button className="controls__clear" type="button" onClick={clear}>

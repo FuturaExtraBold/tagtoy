@@ -18,10 +18,13 @@ import {
 interface RenderOptions {
   dripProgress?: number;
   includeDrips?: boolean;
+  gradientBounds?: { minX: number; minY: number; maxX: number; maxY: number };
 }
 
 function seedForStroke(stroke: Stroke): number {
-  return Math.round(stroke.points[0].x * 7 + stroke.points[0].y * 13);
+  const points =
+    stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+  return Math.round(points[0].x * 7 + points[0].y * 13 + stroke.id * 17);
 }
 
 function drawDrips(
@@ -76,43 +79,6 @@ function drawOverspray(
   }
 }
 
-function drawAccentTexture(
-  g: Graphics,
-  points: Stroke["points"],
-  lineWidth: number,
-  amount: number,
-  sizeScale: number,
-  color: string,
-  seed: number,
-  minSpread: number,
-  maxSpread: number,
-  minSize: number,
-  maxSize: number,
-  offsetX = 0,
-  offsetY = 0,
-): void {
-  if (points.length < 2 || amount <= 0) return;
-  const rand = seededRand(seed);
-  const step = Math.max(1, Math.floor(points.length / 22));
-
-  for (let i = 0; i < points.length; i += step) {
-    const p = points[i];
-    const splats = Math.max(1, Math.floor((1.5 + rand() * 3.5) * amount));
-    for (let j = 0; j < splats; j++) {
-      const angle = rand() * Math.PI * 2;
-      const dist =
-        lineWidth * (minSpread + rand() * (maxSpread - minSpread));
-      const size =
-        (minSize + rand() * (maxSize - minSize)) * amount * sizeScale;
-      g.circle(
-        p.x + offsetX + Math.cos(angle) * dist,
-        p.y + offsetY + Math.sin(angle) * dist,
-        size,
-      ).fill({ color });
-    }
-  }
-}
-
 function drawExtrusion(
   g: Graphics,
   stroke: Stroke,
@@ -125,6 +91,8 @@ function drawExtrusion(
   sensitivity: number,
   blob = false,
 ): void {
+  const points =
+    stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
   const dist = Math.hypot(sx, sy);
   if (dist < 1) return;
 
@@ -133,11 +101,11 @@ function drawExtrusion(
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     if (blob) {
-      drawBlobBrush(g, stroke.points, lineWidth, color, sx * t, sy * t);
+      drawBlobBrush(g, points, lineWidth, color, sx * t, sy * t);
     } else {
       drawBrush(
         g,
-        stroke.points,
+        points,
         lineWidth,
         brushType,
         color,
@@ -195,11 +163,13 @@ function createTagDisplay(strokes: Stroke[], config: RenderConfig): Container {
   } = config;
 
   for (const stroke of strokes) {
-    if (stroke.points.length < 2) continue;
+    const points =
+      stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+    if (points.length < 2) continue;
     const seed = seedForStroke(stroke);
     drawBrush(
       g,
-      stroke.points,
+      points,
       brushSize,
       brushType,
       "#000000",
@@ -207,7 +177,7 @@ function createTagDisplay(strokes: Stroke[], config: RenderConfig): Container {
       sensitivity,
     );
     if (showOverspray) {
-      drawOverspray(g, stroke.points, brushSize, oversprayAmount, seed);
+      drawOverspray(g, points, brushSize, oversprayAmount, seed);
     }
   }
 
@@ -221,6 +191,8 @@ function createThrowupStrokeDisplay(
   options: RenderOptions,
 ): Container {
   const container = new Container();
+  const points =
+    stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
   const {
     brushSize,
     shadowOffset,
@@ -232,14 +204,6 @@ function createThrowupStrokeDisplay(
     brushType,
     showDrips,
     dripCount,
-    showInnerAccent,
-    innerAccentAmount,
-    innerAccentSize,
-    innerAccentColor,
-    showBackAccent,
-    backAccentAmount,
-    backAccentSize,
-    backAccentColor,
     pressureSensitivity,
     sensitivity,
   } = config;
@@ -253,7 +217,7 @@ function createThrowupStrokeDisplay(
     const drips = new Graphics();
     drawDrips(
       drips,
-      stroke.points,
+      points,
       outlineSize,
       shadowColor,
       seed,
@@ -263,26 +227,6 @@ function createThrowupStrokeDisplay(
       sy,
     );
     container.addChild(drips);
-  }
-
-  if (showBackAccent && backAccentAmount > 0 && shadowOffset > 0) {
-    const accent = new Graphics();
-    drawAccentTexture(
-      accent,
-      stroke.points,
-      outlineSize,
-      backAccentAmount,
-      backAccentSize,
-      backAccentColor,
-      seed ^ 0xa11ce,
-      0.42,
-      0.92,
-      0.45,
-      1.4,
-      sx,
-      sy,
-    );
-    container.addChild(accent);
   }
 
   const shadow = new Graphics();
@@ -300,37 +244,17 @@ function createThrowupStrokeDisplay(
       true,
     );
   } else if (shadowOffset > 0) {
-    drawBlobBrush(shadow, stroke.points, outlineSize, shadowColor, sx, sy);
+    drawBlobBrush(shadow, points, outlineSize, shadowColor, sx, sy);
   }
   container.addChild(shadow);
 
   const outline = new Graphics();
-  drawBlobBrush(outline, stroke.points, outlineSize, outlineColor);
+  drawBlobBrush(outline, points, outlineSize, outlineColor);
   container.addChild(outline);
 
   const fill = new Graphics();
-  drawBlobBrush(fill, stroke.points, brushSize, throwupColor);
+  drawBlobBrush(fill, points, brushSize, throwupColor);
   container.addChild(fill);
-
-  if (showInnerAccent && innerAccentAmount > 0) {
-    const accent = new Graphics();
-    drawAccentTexture(
-      accent,
-      stroke.points,
-      brushSize,
-      innerAccentAmount,
-      innerAccentSize,
-      innerAccentColor,
-      seed ^ 0x1aacce,
-      0.02,
-      0.32,
-      0.35,
-      1.1,
-    );
-    const mask = new Graphics();
-    drawBlobBrush(mask, stroke.points, brushSize, "#ffffff");
-    clearMaskedLayer(container, accent, mask);
-  }
 
   return container;
 }
@@ -343,7 +267,7 @@ function createThrowupDisplay(
   const container = new Container();
 
   for (const stroke of strokes) {
-    if (stroke.points.length < 2) continue;
+    if (stroke.renderPoints.length < 2 && stroke.points.length < 2) continue;
     container.addChild(createThrowupStrokeDisplay(stroke, config, options));
   }
 
@@ -357,6 +281,8 @@ function createBurnerStrokeDisplay(
   options: RenderOptions,
 ): Container {
   const container = new Container();
+  const points =
+    stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
   const {
     brushSize,
     shadowOffset,
@@ -369,14 +295,6 @@ function createBurnerStrokeDisplay(
     brushType,
     showDrips,
     dripCount,
-    showInnerAccent,
-    innerAccentAmount,
-    innerAccentSize,
-    innerAccentColor,
-    showBackAccent,
-    backAccentAmount,
-    backAccentSize,
-    backAccentColor,
     pressureSensitivity,
     sensitivity,
   } = config;
@@ -390,7 +308,7 @@ function createBurnerStrokeDisplay(
     const drips = new Graphics();
     drawDrips(
       drips,
-      stroke.points,
+      points,
       outlineSize,
       shadowColor,
       seed,
@@ -400,26 +318,6 @@ function createBurnerStrokeDisplay(
       sy,
     );
     container.addChild(drips);
-  }
-
-  if (showBackAccent && backAccentAmount > 0 && shadowOffset > 0) {
-    const accent = new Graphics();
-    drawAccentTexture(
-      accent,
-      stroke.points,
-      outlineSize,
-      backAccentAmount,
-      backAccentSize,
-      backAccentColor,
-      seed ^ 0xbacc,
-      0.42,
-      1,
-      0.45,
-      1.5,
-      sx,
-      sy,
-    );
-    container.addChild(accent);
   }
 
   const shadow = new Graphics();
@@ -438,7 +336,7 @@ function createBurnerStrokeDisplay(
   } else if (shadowOffset > 0) {
     drawBrush(
       shadow,
-      stroke.points,
+      points,
       outlineSize,
       brushType,
       shadowColor,
@@ -453,7 +351,7 @@ function createBurnerStrokeDisplay(
   const outline = new Graphics();
   drawBrush(
     outline,
-    stroke.points,
+    points,
     outlineSize,
     brushType,
     outlineColor,
@@ -465,7 +363,7 @@ function createBurnerStrokeDisplay(
   const fillMask = new Graphics();
   drawBrush(
     fillMask,
-    stroke.points,
+    points,
     brushSize,
     brushType,
     "#ffffff",
@@ -474,34 +372,6 @@ function createBurnerStrokeDisplay(
   );
   const fill = createVerticalGradientField(bounds, gradientStart, gradientEnd);
   clearMaskedLayer(container, fill, fillMask);
-
-  if (showInnerAccent && innerAccentAmount > 0) {
-    const accent = new Graphics();
-    drawAccentTexture(
-      accent,
-      stroke.points,
-      brushSize,
-      innerAccentAmount,
-      innerAccentSize,
-      innerAccentColor,
-      seed ^ 0xacce17,
-      0.01,
-      0.28,
-      0.3,
-      0.95,
-    );
-    const mask = new Graphics();
-    drawBrush(
-      mask,
-      stroke.points,
-      brushSize,
-      brushType,
-      "#ffffff",
-      pressureSensitivity,
-      sensitivity,
-    );
-    clearMaskedLayer(container, accent, mask);
-  }
 
   return container;
 }
@@ -524,31 +394,25 @@ function createBurnerCombinedDisplay(
     brushType,
     showDrips,
     dripCount,
-    showInnerAccent,
-    innerAccentAmount,
-    innerAccentSize,
-    innerAccentColor,
-    showBackAccent,
-    backAccentAmount,
-    backAccentSize,
-    backAccentColor,
     pressureSensitivity,
     sensitivity,
   } = config;
 
   const [sx, sy] = shadowCoords(config);
   const pad = Math.max(brushSize, outlineSize) / 2;
-  const bounds = getDrawingBounds(strokes, pad);
+  const bounds = options.gradientBounds ?? getDrawingBounds(strokes, pad);
   const dripProgress = options.dripProgress ?? 1;
   const includeDrips = options.includeDrips ?? true;
 
   if (includeDrips && showDrips) {
     const drips = new Graphics();
     for (const stroke of strokes) {
-      if (stroke.points.length < 2) continue;
+      const points =
+        stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+      if (points.length < 2) continue;
       drawDrips(
         drips,
-        stroke.points,
+        points,
         outlineSize,
         shadowColor,
         seedForStroke(stroke),
@@ -561,35 +425,11 @@ function createBurnerCombinedDisplay(
     container.addChild(drips);
   }
 
-  if (showBackAccent && backAccentAmount > 0 && shadowOffset > 0) {
-    const accent = new Graphics();
-
-    for (const stroke of strokes) {
-      if (stroke.points.length < 2) continue;
-      const seed = seedForStroke(stroke);
-      drawAccentTexture(
-        accent,
-        stroke.points,
-        outlineSize,
-        backAccentAmount,
-        backAccentSize,
-        backAccentColor,
-        seed ^ 0xbacc,
-        0.42,
-        1,
-        0.45,
-        1.5,
-        sx,
-        sy,
-      );
-    }
-
-    container.addChild(accent);
-  }
-
   const shadow = new Graphics();
   for (const stroke of strokes) {
-    if (stroke.points.length < 2) continue;
+    const points =
+      stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+    if (points.length < 2) continue;
     if (shadowAttached && shadowOffset > 0) {
       drawExtrusion(
         shadow,
@@ -605,7 +445,7 @@ function createBurnerCombinedDisplay(
     } else if (shadowOffset > 0) {
       drawBrush(
         shadow,
-        stroke.points,
+        points,
         outlineSize,
         brushType,
         shadowColor,
@@ -620,10 +460,12 @@ function createBurnerCombinedDisplay(
 
   const outline = new Graphics();
   for (const stroke of strokes) {
-    if (stroke.points.length < 2) continue;
+    const points =
+      stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+    if (points.length < 2) continue;
     drawBrush(
       outline,
-      stroke.points,
+      points,
       outlineSize,
       brushType,
       outlineColor,
@@ -635,10 +477,12 @@ function createBurnerCombinedDisplay(
 
   const fillMask = new Graphics();
   for (const stroke of strokes) {
-    if (stroke.points.length < 2) continue;
+    const points =
+      stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+    if (points.length < 2) continue;
     drawBrush(
       fillMask,
-      stroke.points,
+      points,
       brushSize,
       brushType,
       "#ffffff",
@@ -648,39 +492,6 @@ function createBurnerCombinedDisplay(
   }
   const fill = createVerticalGradientField(bounds, gradientStart, gradientEnd);
   clearMaskedLayer(container, fill, fillMask);
-
-  if (showInnerAccent && innerAccentAmount > 0) {
-    const accent = new Graphics();
-    const mask = new Graphics();
-
-    for (const stroke of strokes) {
-      if (stroke.points.length < 2) continue;
-      drawAccentTexture(
-        accent,
-        stroke.points,
-        brushSize,
-        innerAccentAmount,
-        innerAccentSize,
-        innerAccentColor,
-        seedForStroke(stroke) ^ 0xacce17,
-        0.01,
-        0.28,
-        0.3,
-        0.95,
-      );
-      drawBrush(
-        mask,
-        stroke.points,
-        brushSize,
-        brushType,
-        "#ffffff",
-        pressureSensitivity,
-        sensitivity,
-      );
-    }
-
-    clearMaskedLayer(container, accent, mask);
-  }
 
   return container;
 }
@@ -699,12 +510,14 @@ function createBurnerDisplay(
   const pad = Math.max(config.brushSize, config.outlineSize) / 2;
 
   for (const stroke of strokes) {
-    if (stroke.points.length < 2) continue;
+    const points =
+      stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+    if (points.length < 2) continue;
     container.addChild(
       createBurnerStrokeDisplay(
         stroke,
         config,
-        getBoundsFromPoints(stroke.points, pad),
+        getBoundsFromPoints(points, pad),
         options,
       ),
     );

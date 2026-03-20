@@ -60,7 +60,10 @@ export function getDrawingBounds(
     maxX = -Infinity,
     maxY = -Infinity;
   for (const s of strokes) {
-    const b = getBoundsFromPoints(s.points, pad);
+    const b = getBoundsFromPoints(
+      s.renderPoints.length > 1 ? s.renderPoints : s.points,
+      pad,
+    );
     if (b.minX < minX) minX = b.minX;
     if (b.minY < minY) minY = b.minY;
     if (b.maxX > maxX) maxX = b.maxX;

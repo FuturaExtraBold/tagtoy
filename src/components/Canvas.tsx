@@ -7,7 +7,8 @@ import type { RenderConfig } from "../types/drawing";
 
 export function Canvas() {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const { strokes, activeStyle, gradientMode, addStroke } = useCanvas();
+  const { strokes, lockedStrokeCount, activeStyle, gradientMode, addStroke } =
+    useCanvas();
   const style = useStyle();
 
   const renderConfig: RenderConfig = useMemo(
@@ -27,14 +28,6 @@ export function Canvas() {
       dripCount: style.dripCount,
       showOverspray: style.showOverspray,
       oversprayAmount: style.oversprayAmount,
-      showInnerAccent: style.showInnerAccent,
-      innerAccentAmount: style.innerAccentAmount,
-      innerAccentSize: style.innerAccentSize,
-      innerAccentColor: style.innerAccentColor,
-      showBackAccent: style.showBackAccent,
-      backAccentAmount: style.backAccentAmount,
-      backAccentSize: style.backAccentSize,
-      backAccentColor: style.backAccentColor,
       pressureSensitivity: style.pressureSensitivity,
       sensitivity: style.sensitivity,
     }),
@@ -54,14 +47,6 @@ export function Canvas() {
       style.dripCount,
       style.showOverspray,
       style.oversprayAmount,
-      style.showInnerAccent,
-      style.innerAccentAmount,
-      style.innerAccentSize,
-      style.innerAccentColor,
-      style.showBackAccent,
-      style.backAccentAmount,
-      style.backAccentSize,
-      style.backAccentColor,
       style.pressureSensitivity,
       style.sensitivity,
     ],
@@ -69,6 +54,7 @@ export function Canvas() {
 
   usePixiCanvas(canvasRef, {
     strokes,
+    lockedStrokeCount,
     style: activeStyle,
     gradientMode,
     renderConfig,

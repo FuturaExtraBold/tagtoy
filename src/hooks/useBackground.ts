@@ -2,6 +2,8 @@ import { useEffect } from "react";
 
 export function useBackground(bg: string): void {
   useEffect(() => {
+    document.body.style.backgroundColor = "#ffffff";
+
     if (bg) {
       document.body.style.backgroundImage = `url(/backgrounds/${bg})`;
       document.body.style.backgroundSize = "cover";

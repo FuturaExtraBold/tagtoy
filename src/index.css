@@ -1,13 +1,9 @@
 :root {
-  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
-  color: #1f1f1f;
-  background: #ffffff;
   --panel-bg-top: #fafafa;
   --panel-bg-bottom: #fafafa;
   --panel-border: rgb(148 148 148 / 0.28);
   --panel-shadow:
-    0 24px 56px rgb(24 24 24 / 0.12),
-    0 6px 20px rgb(24 24 24 / 0.06);
+    0 24px 56px rgb(24 24 24 / 0.12), 0 6px 20px rgb(24 24 24 / 0.06);
   --surface: rgb(255 255 255 / 0.7);
   --surface-strong: rgb(253 253 253 / 0.96);
   --surface-pressed: rgb(238 238 238 / 0.96);
@@ -19,6 +15,10 @@
   --button-strong: #2a2a2a;
   --button-text: #f6f6f6;
   --focus: rgb(136 136 136 / 0.45);
+
+  background: #ffffff;
+  color: #1f1f1f;
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
 * {
@@ -37,8 +37,8 @@ body {
   overflow: hidden;
   height: 100dvh;
   background-color: #ffffff;
-  overscroll-behavior: none;
   color: var(--text);
+  overscroll-behavior: none;
 }
 
 #root {
@@ -82,19 +82,19 @@ body.has-bg canvas {
 .controls__shell {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   padding: 15px;
   border: 1px solid var(--panel-border);
   border-radius: 20px;
   background: #fafafa;
   box-shadow: var(--panel-shadow);
+  gap: 12px;
 }
 
 .controls__intro {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   padding-right: 12px;
+  gap: 4px;
 }
 
 .controls__eyebrow {
@@ -113,14 +113,18 @@ body.has-bg canvas {
 
 .controls__primary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .ctrl-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.ctrl-field--full {
+  grid-column: 1 / -1;
 }
 
 .ctrl-field--compact {
@@ -173,11 +177,10 @@ body.has-bg canvas {
   width: 100%;
   padding: 10px 34px 10px 11px;
   border-radius: 12px;
+  appearance: none;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.65);
   color: var(--text);
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.65);
 }
 
 .controls__accordion,
@@ -192,15 +195,15 @@ body.has-bg canvas {
 
 .controls__accordion {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
   width: 100%;
+  align-items: flex-start;
   padding: 12px 13px;
   border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
   color: var(--text);
   cursor: pointer;
+  gap: 10px;
   text-align: left;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
 }
 
 .controls__accordion:hover,
@@ -211,10 +214,10 @@ body.has-bg canvas {
 .controls__caret {
   width: 11px;
   height: 11px;
-  margin-top: 3px;
+  flex: none;
   border-right: 2px solid var(--text);
   border-bottom: 2px solid var(--text);
-  flex: none;
+  margin-top: 3px;
   transform: rotate(45deg);
 }
 
@@ -248,11 +251,15 @@ body.has-bg canvas {
 .ctrl-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.84), rgb(244 244 244 / 0.96));
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.84),
+    rgb(244 244 244 / 0.96)
+  );
+  gap: 10px;
 }
 
 .ctrl-row__header {
@@ -308,19 +315,19 @@ body.has-bg canvas {
 .ctrl-chip-row > *,
 .ctrl-inline-row > *,
 .ctrl-swatch-grid > * {
-  flex: 1 1 0;
   min-width: 0;
+  flex: 1 1 0;
 }
 
 .ctrl-color-field {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
   padding: 9px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
+  gap: 10px;
 }
 
 .ctrl-color-field--wide {
@@ -338,11 +345,10 @@ body.has-bg canvas {
   padding: 0;
   border: 1px solid #d8d7d2;
   border-radius: 10px;
-  background: none;
-  cursor: pointer;
   appearance: none;
-  -webkit-appearance: none;
+  background: none;
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+  cursor: pointer;
 }
 
 .color-chip::-webkit-color-swatch-wrapper {
@@ -361,36 +367,40 @@ body.has-bg canvas {
 
 .ctrl-row input[type="range"] {
   width: 100%;
-  background: transparent;
   appearance: none;
-  -webkit-appearance: none;
+  background: transparent;
 }
 
 .ctrl-row input[type="range"]::-webkit-slider-runnable-track {
   height: 7px;
   border-radius: 999px;
-  background:
-    linear-gradient(90deg, rgb(34 28 21 / 0.95), rgb(126 114 92 / 0.55));
+  background: linear-gradient(
+    90deg,
+    rgb(34 28 21 / 0.95),
+    rgb(126 114 92 / 0.55)
+  );
 }
 
 .ctrl-row input[type="range"]::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
-  margin-top: -5px;
   border: 2px solid rgb(255 252 245 / 0.92);
   border-radius: 50%;
+  margin-top: -5px;
+  appearance: none;
   background: var(--button);
   box-shadow: 0 2px 8px rgb(34 28 21 / 0.25);
-  appearance: none;
-  -webkit-appearance: none;
 }
 
 .ctrl-row input[type="range"]::-moz-range-track {
   height: 7px;
-  border-radius: 999px;
   border: none;
-  background:
-    linear-gradient(90deg, rgb(34 28 21 / 0.95), rgb(126 114 92 / 0.55));
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgb(34 28 21 / 0.95),
+    rgb(126 114 92 / 0.55)
+  );
 }
 
 .ctrl-row input[type="range"]::-moz-range-thumb {
@@ -404,8 +414,8 @@ body.has-bg canvas {
 
 .check-label {
   display: flex;
-  align-items: center;
   min-height: 40px;
+  align-items: center;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -419,15 +429,14 @@ body.has-bg canvas {
 }
 
 .check-label input[type="checkbox"] {
+  display: grid;
   width: 18px;
   height: 18px;
+  flex: none;
   border: 1px solid var(--line-strong);
   border-radius: 6px;
-  background: #fffdfa;
-  flex: none;
   appearance: none;
-  -webkit-appearance: none;
-  display: grid;
+  background: #fffdfa;
   place-items: center;
 }
 
@@ -458,8 +467,8 @@ body.has-bg canvas {
 
 .controls__footer {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
   gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .controls__clear,
@@ -477,23 +486,22 @@ body.has-bg canvas {
 
 .controls__undo {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  width: 100%;
   padding: 13px 14px;
   border: 1px solid rgb(26 21 14 / 0.85);
-  background:
-    linear-gradient(135deg, var(--button), var(--button-strong));
+  background: linear-gradient(135deg, var(--button), var(--button-strong));
   box-shadow: 0 14px 28px rgb(23 19 14 / 0.2);
   color: var(--button-text);
   font-size: 14px;
   font-weight: 700;
+  gap: 10px;
 }
 
 .controls__undo:hover {
-  transform: translateY(-1px);
   box-shadow: 0 18px 32px rgb(23 19 14 / 0.24);
+  transform: translateY(-1px);
 }
 
 .controls__undo-hint {
@@ -511,7 +519,7 @@ body.has-bg canvas {
   outline-offset: 2px;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .controls {
     top: 12px;
     left: 12px;
@@ -519,9 +527,9 @@ body.has-bg canvas {
   }
 
   .controls__shell {
-    gap: 10px;
     padding: 14px;
     border-radius: 18px;
+    gap: 10px;
   }
 
   .controls__primary,

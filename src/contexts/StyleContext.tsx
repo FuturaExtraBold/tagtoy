@@ -26,14 +26,6 @@ interface StyleContextValue extends RenderConfig {
   setDripCount: (v: number) => void;
   setShowOverspray: (v: boolean) => void;
   setOversprayAmount: (v: number) => void;
-  setShowInnerAccent: (v: boolean) => void;
-  setInnerAccentAmount: (v: number) => void;
-  setInnerAccentSize: (v: number) => void;
-  setInnerAccentColor: (v: string) => void;
-  setShowBackAccent: (v: boolean) => void;
-  setBackAccentAmount: (v: number) => void;
-  setBackAccentSize: (v: number) => void;
-  setBackAccentColor: (v: string) => void;
   setPressureSensitivity: (v: boolean) => void;
   setSensitivity: (v: number) => void;
 }
@@ -62,28 +54,6 @@ export function StyleProvider({ children }: { children: ReactNode }) {
   const [sensitivity, setSensitivity] = useState(7);
   const [showOverspray, setShowOverspray] = useState(TAG.showOverspray);
   const [oversprayAmount, setOversprayAmount] = useState(TAG.oversprayAmount);
-  const [showInnerAccent, setShowInnerAccent] = useState(
-    THROWUP.showInnerAccent,
-  );
-  const [innerAccentAmount, setInnerAccentAmount] = useState(
-    THROWUP.innerAccentAmount,
-  );
-  const [innerAccentSize, setInnerAccentSize] = useState(
-    THROWUP.innerAccentSize,
-  );
-  const [innerAccentColor, setInnerAccentColor] = useState(
-    THROWUP.innerAccentColor,
-  );
-  const [showBackAccent, setShowBackAccent] = useState(THROWUP.showBackAccent);
-  const [backAccentAmount, setBackAccentAmount] = useState(
-    THROWUP.backAccentAmount,
-  );
-  const [backAccentSize, setBackAccentSize] = useState(
-    THROWUP.backAccentSize,
-  );
-  const [backAccentColor, setBackAccentColor] = useState(
-    THROWUP.backAccentColor,
-  );
 
   const handleBrushSize = useCallback((v: number) => {
     setBrushSize(v);
@@ -123,22 +93,6 @@ export function StyleProvider({ children }: { children: ReactNode }) {
         setShowOverspray,
         oversprayAmount,
         setOversprayAmount,
-        showInnerAccent,
-        setShowInnerAccent,
-        innerAccentAmount,
-        setInnerAccentAmount,
-        innerAccentSize,
-        setInnerAccentSize,
-        innerAccentColor,
-        setInnerAccentColor,
-        showBackAccent,
-        setShowBackAccent,
-        backAccentAmount,
-        setBackAccentAmount,
-        backAccentSize,
-        setBackAccentSize,
-        backAccentColor,
-        setBackAccentColor,
         pressureSensitivity,
         setPressureSensitivity,
         sensitivity,

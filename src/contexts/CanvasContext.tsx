@@ -11,6 +11,7 @@ import type { GradientMode, Stroke, StyleMode } from "../types/drawing";
 
 interface CanvasContextValue {
   strokes: Stroke[];
+  lockedStrokeCount: number;
   activeStyle: StyleMode;
   gradientMode: GradientMode;
   background: string;
@@ -25,27 +26,50 @@ interface CanvasContextValue {
 const CanvasContext = createContext<CanvasContextValue | null>(null);
 
 export function CanvasProvider({ children }: { children: ReactNode }) {
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [strokeState, setStrokeState] = useState<{
+    strokes: Stroke[];
+    lockedStrokeCount: number;
+  }>({ strokes: [], lockedStrokeCount: 0 });
   const [activeStyle, setActiveStyle] = useState<StyleMode>("tag");
   const [gradientMode, setGradientMode] = useState<GradientMode>("overlay");
   const [background, setBackground] = useState("");
 
   const addStroke = useCallback((s: Stroke) => {
-    setStrokes((prev) => [...prev, s]);
+    setStrokeState((prev) => {
+      const undoableCount = prev.strokes.length - prev.lockedStrokeCount;
+
+      return {
+        strokes: [...prev.strokes, s],
+        lockedStrokeCount:
+          undoableCount >= 50
+            ? prev.lockedStrokeCount + 1
+            : prev.lockedStrokeCount,
+      };
+    });
   }, []);
 
   const undo = useCallback(() => {
-    setStrokes((prev) => prev.slice(0, -1));
+    setStrokeState((prev) => {
+      if (prev.strokes.length <= prev.lockedStrokeCount) {
+        return prev;
+      }
+
+      return {
+        strokes: prev.strokes.slice(0, -1),
+        lockedStrokeCount: prev.lockedStrokeCount,
+      };
+    });
   }, []);
 
   const clear = useCallback(() => {
-    setStrokes([]);
+    setStrokeState({ strokes: [], lockedStrokeCount: 0 });
   }, []);
 
   return (
     <CanvasContext.Provider
       value={{
-        strokes,
+        strokes: strokeState.strokes,
+        lockedStrokeCount: strokeState.lockedStrokeCount,
         activeStyle,
         gradientMode,
         background,

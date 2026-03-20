@@ -1,5 +1,5 @@
 export type Point = { x: number; y: number; pressure: number };
-export type Stroke = { points: Point[] };
+export type Stroke = { id: number; points: Point[]; renderPoints: Point[] };
 export type StyleMode = "tag" | "throwup" | "burner";
 export type GradientMode = "overlay" | "combined";
 export type BrushType = "round" | "square";
@@ -21,14 +21,6 @@ export interface RenderConfig {
   dripCount: number;
   showOverspray: boolean;
   oversprayAmount: number;
-  showInnerAccent: boolean;
-  innerAccentAmount: number;
-  innerAccentSize: number;
-  innerAccentColor: string;
-  showBackAccent: boolean;
-  backAccentAmount: number;
-  backAccentSize: number;
-  backAccentColor: string;
   pressureSensitivity: boolean;
   sensitivity: number;
 }

@@ -29,7 +29,7 @@ export function StyleRow() {
             value={background}
             onChange={(e) => setBackground(e.target.value)}
           >
-            <option value="">No Background</option>
+            <option value="">White</option>
             <option value="bricks-white.jpg">Bricks</option>
             <option value="concrete-light.jpg">Concrete</option>
           </select>
