@@ -24,8 +24,6 @@ interface StyleContextValue extends RenderConfig {
   setGradientEnd: (v: string) => void;
   setShowDrips: (v: boolean) => void;
   setDripCount: (v: number) => void;
-  setShowOverspray: (v: boolean) => void;
-  setOversprayAmount: (v: number) => void;
   setPressureSensitivity: (v: boolean) => void;
   setSensitivity: (v: number) => void;
 }
@@ -52,8 +50,6 @@ export function StyleProvider({ children }: { children: ReactNode }) {
   const [dripCount, setDripCount] = useState(TAG.dripCount);
   const [pressureSensitivity, setPressureSensitivity] = useState(false);
   const [sensitivity, setSensitivity] = useState(7);
-  const [showOverspray, setShowOverspray] = useState(TAG.showOverspray);
-  const [oversprayAmount, setOversprayAmount] = useState(TAG.oversprayAmount);
 
   const handleBrushSize = useCallback((v: number) => {
     setBrushSize(v);
@@ -89,10 +85,6 @@ export function StyleProvider({ children }: { children: ReactNode }) {
         setShowDrips,
         dripCount,
         setDripCount,
-        showOverspray,
-        setShowOverspray,
-        oversprayAmount,
-        setOversprayAmount,
         pressureSensitivity,
         setPressureSensitivity,
         sensitivity,

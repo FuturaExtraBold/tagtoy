@@ -51,11 +51,6 @@ canvas {
   cursor: none;
 }
 
-body.has-bg canvas {
-  filter: saturate(2);
-  mix-blend-mode: multiply;
-}
-
 .cursor {
   position: fixed;
   z-index: 20;
@@ -310,6 +305,57 @@ body.has-bg canvas {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.brush-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.brush-option {
+  display: flex;
+  min-height: 72px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  gap: 8px;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.brush-option:hover {
+  background: var(--surface-pressed);
+}
+
+.brush-option.is-active {
+  border-color: rgb(34 34 34 / 0.4);
+  background: linear-gradient(
+    180deg,
+    rgb(34 34 34 / 0.08),
+    rgb(34 34 34 / 0.02)
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.55);
+}
+
+.brush-option__icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+.brush-option span {
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .ctrl-chip-row > *,

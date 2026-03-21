@@ -9,13 +9,9 @@ import { ShadowRow } from "./ShadowRow";
 import { StyleRow } from "./StyleRow";
 
 export function ControlPanel() {
-  const { activeStyle, undo, clear } = useCanvas();
-  const hasEffects = activeStyle === "throwup" || activeStyle === "burner";
+  const { undo, clear } = useCanvas();
   const [isExpanded, setIsExpanded] = useState(false);
   const advancedControlsId = useId();
-  const advancedSummary = hasEffects
-    ? "Brush, pressure, shadow, outline, and fill controls live below."
-    : "Brush and pressure controls live below.";
 
   return (
     <div className="controls">
@@ -42,7 +38,9 @@ export function ControlPanel() {
             <span className="controls__accordion-label">
               More controls below
             </span>
-            <span className="controls__accordion-note">{advancedSummary}</span>
+            <span className="controls__accordion-note">
+              Brush, pressure, shadow, outline, and fill controls live below.
+            </span>
           </span>
         </button>
         <div
@@ -52,9 +50,9 @@ export function ControlPanel() {
         >
           <BrushRow />
           <PressureRow />
-          {hasEffects && <ShadowRow />}
-          {hasEffects && <OutlineRow />}
-          {hasEffects && <FillRow />}
+          <ShadowRow />
+          <OutlineRow />
+          <FillRow />
         </div>
         <div className="controls__footer">
           <button className="controls__clear" type="button" onClick={clear}>

@@ -2,11 +2,11 @@ import { useMemo, useRef } from "react";
 
 import { useCanvas } from "../contexts/CanvasContext";
 import { useStyle } from "../contexts/StyleContext";
-import { usePixiCanvas } from "../hooks/usePixiCanvas";
+import { useDrawingCanvas } from "../hooks/useDrawingCanvas";
 import type { RenderConfig } from "../types/drawing";
 
 export function Canvas() {
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { strokes, lockedStrokeCount, activeStyle, gradientMode, addStroke } =
     useCanvas();
   const style = useStyle();
@@ -26,8 +26,6 @@ export function Canvas() {
       gradientEnd: style.gradientEnd,
       showDrips: style.showDrips,
       dripCount: style.dripCount,
-      showOverspray: style.showOverspray,
-      oversprayAmount: style.oversprayAmount,
       pressureSensitivity: style.pressureSensitivity,
       sensitivity: style.sensitivity,
     }),
@@ -45,14 +43,12 @@ export function Canvas() {
       style.gradientEnd,
       style.showDrips,
       style.dripCount,
-      style.showOverspray,
-      style.oversprayAmount,
       style.pressureSensitivity,
       style.sensitivity,
     ],
   );
 
-  usePixiCanvas(canvasRef, {
+  useDrawingCanvas(canvasRef, {
     strokes,
     lockedStrokeCount,
     style: activeStyle,
@@ -61,5 +57,10 @@ export function Canvas() {
     onStrokeComplete: addStroke,
   });
 
-  return <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ display: "block", width: "100%", height: "100%" }}
+    />
+  );
 }

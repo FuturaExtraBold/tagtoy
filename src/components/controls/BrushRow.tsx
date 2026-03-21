@@ -1,6 +1,46 @@
 import { useCanvas } from "../../contexts/CanvasContext";
 import { useStyle } from "../../contexts/StyleContext";
 
+function BrushIcon({ type }: { type: "round" | "square" | "calligraphy" }) {
+  if (type === "round") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="brush-option__icon"
+        viewBox="0 0 24 24"
+      >
+        <circle cx="12" cy="12" r="5.5" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (type === "square") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="brush-option__icon"
+        viewBox="0 0 24 24"
+      >
+        <rect x="6.5" y="6.5" width="11" height="11" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="brush-option__icon" viewBox="0 0 24 24">
+      <rect
+        x="6"
+        y="10"
+        width="12"
+        height="4"
+        rx="1"
+        fill="currentColor"
+        transform="rotate(45 12 12)"
+      />
+    </svg>
+  );
+}
+
 export function BrushRow() {
   const { activeStyle } = useCanvas();
   const {
@@ -12,31 +52,36 @@ export function BrushRow() {
     setShowDrips,
     dripCount,
     setDripCount,
-    showOverspray,
-    setShowOverspray,
-    oversprayAmount,
-    setOversprayAmount,
   } = useStyle();
   const showDripControls = activeStyle !== "tag";
-  const showTagOverspray = activeStyle === "tag";
 
   return (
     <section className="ctrl-row">
       <div className="ctrl-row__header">
         <div>
           <p className="ctrl-row__title">Brush</p>
-          <p className="ctrl-row__note">Shape, size, and spray texture.</p>
+          <p className="ctrl-row__note">Shape, size, and drip behavior.</p>
         </div>
-        <div className="select-wrap select-wrap--compact">
-          <select
-            aria-label="Brush type"
-            value={brushType}
-            onChange={(e) => setBrushType(e.target.value as "round" | "square")}
+      </div>
+      <div className="brush-options" role="group" aria-label="Brush type">
+        {(
+          [
+            ["round", "Round"],
+            ["square", "Square"],
+            ["calligraphy", "Chisel"],
+          ] as const
+        ).map(([type, label]) => (
+          <button
+            key={type}
+            aria-pressed={brushType === type}
+            aria-label={label}
+            className={`brush-option${brushType === type ? " is-active" : ""}`}
+            type="button"
+            onClick={() => setBrushType(type)}
           >
-            <option value="round">Round</option>
-            <option value="square">Square</option>
-          </select>
-        </div>
+            <BrushIcon type={type} />
+          </button>
+        ))}
       </div>
       <label className="ctrl-slider">
         <div className="ctrl-slider__meta">
@@ -62,16 +107,6 @@ export function BrushRow() {
             <span>Drips</span>
           </label>
         )}
-        {showTagOverspray && (
-          <label className="check-label">
-            <input
-              type="checkbox"
-              checked={showOverspray}
-              onChange={(e) => setShowOverspray(e.target.checked)}
-            />
-            <span>Overspray</span>
-          </label>
-        )}
       </div>
       {showDripControls && showDrips && (
         <label className="ctrl-slider">
@@ -85,24 +120,6 @@ export function BrushRow() {
             max={40}
             value={dripCount}
             onChange={(e) => setDripCount(Number(e.target.value))}
-          />
-        </label>
-      )}
-      {showTagOverspray && showOverspray && (
-        <label className="ctrl-slider">
-          <div className="ctrl-slider__meta">
-            <span className="ctrl-slider__label">Overspray spread</span>
-            <span className="ctrl-slider__value">
-              {oversprayAmount.toFixed(1)}x
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0.5}
-            max={5}
-            step={0.1}
-            value={oversprayAmount}
-            onChange={(e) => setOversprayAmount(Number(e.target.value))}
           />
         </label>
       )}

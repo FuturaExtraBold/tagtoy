@@ -1,8 +1,8 @@
 export type Point = { x: number; y: number; pressure: number };
 export type Stroke = { id: number; points: Point[]; renderPoints: Point[] };
-export type StyleMode = "tag" | "throwup" | "burner";
+export type StyleMode = "tag" | "throwup" | "burner" | "wildstyle";
 export type GradientMode = "overlay" | "combined";
-export type BrushType = "round" | "square";
+export type BrushType = "round" | "square" | "calligraphy";
 export type ShadowAngle = "horizontal" | "45" | "vertical";
 
 export interface RenderConfig {
@@ -19,8 +19,6 @@ export interface RenderConfig {
   gradientEnd: string;
   showDrips: boolean;
   dripCount: number;
-  showOverspray: boolean;
-  oversprayAmount: number;
   pressureSensitivity: boolean;
   sensitivity: number;
 }

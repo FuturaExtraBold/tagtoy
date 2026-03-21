@@ -26,7 +26,7 @@ export function OutlineRow() {
         </div>
         <input
           type="range"
-          min={brushSize}
+          min={0}
           max={brushSize * 2}
           value={outlineSize}
           onChange={(e) => setOutlineSize(Number(e.target.value))}

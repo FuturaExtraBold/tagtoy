@@ -1,14 +1,9 @@
-import type { RenderConfig, StyleMode } from "../types/drawing";
+import type { GradientMode, RenderConfig, StyleMode } from "../types/drawing";
 
 type StyleDefaults = {
   tag: Pick<
     RenderConfig,
-    | "brushType"
-    | "brushSize"
-    | "showDrips"
-    | "dripCount"
-    | "showOverspray"
-    | "oversprayAmount"
+    "brushType" | "brushSize" | "showDrips" | "dripCount"
   >;
   throwup: Omit<
     RenderConfig,
@@ -18,6 +13,10 @@ type StyleDefaults = {
     RenderConfig,
     "throwupColor" | "pressureSensitivity" | "sensitivity"
   >;
+  wildstyle: Omit<
+    RenderConfig,
+    "throwupColor" | "pressureSensitivity" | "sensitivity"
+  > & { gradientMode: GradientMode };
 };
 
 export const STYLE_DEFAULTS: StyleDefaults = {
@@ -26,8 +25,6 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     brushSize: 100,
     showDrips: false,
     dripCount: 5,
-    showOverspray: true,
-    oversprayAmount: 1,
   },
   throwup: {
     brushType: "round",
@@ -41,8 +38,6 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     throwupColor: "#ffffff",
     showDrips: false,
     dripCount: 5,
-    showOverspray: true,
-    oversprayAmount: 1,
   },
   burner: {
     brushType: "round",
@@ -57,11 +52,28 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     gradientEnd: "#2a2a2a",
     showDrips: false,
     dripCount: 5,
-    showOverspray: true,
-    oversprayAmount: 1,
+  },
+  wildstyle: {
+    brushType: "calligraphy",
+    brushSize: 150,
+    shadowOffset: 50,
+    shadowColor: "#cc00ff",
+    shadowAngle: "45",
+    shadowAttached: true,
+    outlineSize: 0,
+    outlineColor: "#000000",
+    gradientStart: "#0055ff",
+    gradientEnd: "#00ff55",
+    gradientMode: "combined",
+    showDrips: false,
+    dripCount: 5,
   },
 };
 
-export function defaultsForStyle(style: StyleMode): Partial<RenderConfig> {
-  return STYLE_DEFAULTS[style] as Partial<RenderConfig>;
+export function defaultsForStyle(
+  style: StyleMode,
+): Partial<RenderConfig> & { gradientMode?: GradientMode } {
+  return STYLE_DEFAULTS[style] as Partial<RenderConfig> & {
+    gradientMode?: GradientMode;
+  };
 }

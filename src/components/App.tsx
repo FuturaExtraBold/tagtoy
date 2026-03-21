@@ -19,9 +19,9 @@ function AppInner() {
 
   return (
     <>
-      <div ref={cursorRef} className="cursor" />
       <Canvas />
       <ControlPanel />
+      <div ref={cursorRef} className="cursor" />
     </>
   );
 }

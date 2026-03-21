@@ -1,7 +1,6 @@
-import { Graphics } from "pixi.js";
-
 import type { BrushType, Point } from "../types/drawing";
-import { blendHex } from "./renderHelpers";
+
+type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 function smoothPoints(points: Point[], iterations = 2): Point[] {
   let pts = points;
@@ -32,10 +31,10 @@ function np(
 }
 
 function drawRound(
-  g: Graphics,
+  ctx: Ctx2D,
   points: Point[],
   lineWidth: number,
-  color: string | number,
+  color: string | CanvasGradient,
   pressureSensitivity: boolean,
   sensitivity: number,
   offsetX = 0,
@@ -53,17 +52,22 @@ function drawRound(
     const fromY = (i > 0 ? (points[i - 1].y + p0.y) / 2 : p0.y) + offsetY;
     const toX = (p0.x + p1.x) / 2 + offsetX;
     const toY = (p0.y + p1.y) / 2 + offsetY;
-    g.moveTo(fromX, fromY)
-      .quadraticCurveTo(p0.x + offsetX, p0.y + offsetY, toX, toY)
-      .stroke({ width: w, color, cap: "round", join: "round" });
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.quadraticCurveTo(p0.x + offsetX, p0.y + offsetY, toX, toY);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
   }
 }
 
 function drawSquare(
-  g: Graphics,
+  ctx: Ctx2D,
   points: Point[],
   lineWidth: number,
-  color: string | number,
+  color: string | CanvasGradient,
   pressureSensitivity: boolean,
   sensitivity: number,
   offsetX = 0,
@@ -73,48 +77,99 @@ function drawSquare(
     points.reduce((s, p) => s + np(p, pressureSensitivity, sensitivity), 0) /
     points.length;
   const w = Math.max(1, lineWidth * avgPressure);
-  g.moveTo(points[0].x + offsetX, points[0].y + offsetY);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x + offsetX, points[0].y + offsetY);
   for (let i = 1; i < points.length - 1; i++) {
     const mx = (points[i].x + points[i + 1].x) / 2 + offsetX;
     const my = (points[i].y + points[i + 1].y) / 2 + offsetY;
-    g.quadraticCurveTo(points[i].x + offsetX, points[i].y + offsetY, mx, my);
+    ctx.quadraticCurveTo(points[i].x + offsetX, points[i].y + offsetY, mx, my);
   }
-  g.lineTo(
+  ctx.lineTo(
     points[points.length - 1].x + offsetX,
     points[points.length - 1].y + offsetY,
-  ).stroke({ width: w, color, cap: "square", join: "bevel" });
+  );
+  ctx.strokeStyle = color;
+  ctx.lineWidth = w;
+  ctx.lineCap = "square";
+  ctx.lineJoin = "bevel";
+  ctx.stroke();
+}
+
+const NIB_ANGLE = Math.PI / 4; // 45°
+const NIB_DX = Math.cos(NIB_ANGLE);
+const NIB_DY = Math.sin(NIB_ANGLE);
+
+function drawChisel(
+  ctx: Ctx2D,
+  points: Point[],
+  lineWidth: number,
+  color: string | CanvasGradient,
+  pressureSensitivity: boolean,
+  sensitivity: number,
+  offsetX = 0,
+  offsetY = 0,
+): void {
+  // Draw one filled quad per segment. Adjacent quads share their nib edge at
+  // each shared vertex, so there are no gaps at direction changes — the
+  // single-polygon approach can become self-intersecting and leave holes.
+  ctx.fillStyle = color;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const h0 = Math.max(
+      0.5,
+      (lineWidth * 0.72 * np(p0, pressureSensitivity, sensitivity)) / 2,
+    );
+    const h1 = Math.max(
+      0.5,
+      (lineWidth * 0.72 * np(p1, pressureSensitivity, sensitivity)) / 2,
+    );
+    ctx.beginPath();
+    ctx.moveTo(p0.x + offsetX + NIB_DX * h0, p0.y + offsetY + NIB_DY * h0);
+    ctx.lineTo(p1.x + offsetX + NIB_DX * h1, p1.y + offsetY + NIB_DY * h1);
+    ctx.lineTo(p1.x + offsetX - NIB_DX * h1, p1.y + offsetY - NIB_DY * h1);
+    ctx.lineTo(p0.x + offsetX - NIB_DX * h0, p0.y + offsetY - NIB_DY * h0);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 export function drawBlobBrush(
-  g: Graphics,
+  ctx: Ctx2D,
   rawPoints: Point[],
   lineWidth: number,
-  color: string | number,
+  color: string | CanvasGradient,
   offsetX = 0,
   offsetY = 0,
 ): void {
   if (rawPoints.length < 2) return;
   const points = rawPoints.length > 4 ? smoothPoints(rawPoints) : rawPoints;
-  g.moveTo(points[0].x + offsetX, points[0].y + offsetY);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x + offsetX, points[0].y + offsetY);
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i],
       p1 = points[i + 1];
     const toX = (p0.x + p1.x) / 2 + offsetX;
     const toY = (p0.y + p1.y) / 2 + offsetY;
-    g.quadraticCurveTo(p0.x + offsetX, p0.y + offsetY, toX, toY);
+    ctx.quadraticCurveTo(p0.x + offsetX, p0.y + offsetY, toX, toY);
   }
-  g.lineTo(
+  ctx.lineTo(
     points[points.length - 1].x + offsetX,
     points[points.length - 1].y + offsetY,
-  ).stroke({ width: lineWidth, color, cap: "round", join: "round" });
+  );
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
 }
 
 export function drawBrush(
-  g: Graphics,
+  ctx: Ctx2D,
   rawPoints: Point[],
   lineWidth: number,
   brushType: BrushType,
-  color: string | number,
+  color: string | CanvasGradient,
   pressureSensitivity = false,
   sensitivity = 10,
   offsetX = 0,
@@ -124,7 +179,18 @@ export function drawBrush(
   const points = rawPoints.length > 4 ? smoothPoints(rawPoints) : rawPoints;
   if (brushType === "square") {
     drawSquare(
-      g,
+      ctx,
+      points,
+      lineWidth,
+      color,
+      pressureSensitivity,
+      sensitivity,
+      offsetX,
+      offsetY,
+    );
+  } else if (brushType === "calligraphy") {
+    drawChisel(
+      ctx,
       points,
       lineWidth,
       color,
@@ -135,7 +201,7 @@ export function drawBrush(
     );
   } else {
     drawRound(
-      g,
+      ctx,
       points,
       lineWidth,
       color,
@@ -144,66 +210,5 @@ export function drawBrush(
       offsetX,
       offsetY,
     );
-  }
-}
-
-/**
- * Draw a brush stroke where each segment's color is sampled from a vertical
- * linear gradient. Replicates Canvas 2D `strokeStyle = gradient` behaviour:
- * the gradient is evaluated at each segment's screen-Y position, giving a
- * stable top-to-bottom colour regardless of stroke path direction.
- */
-export function drawGradientBrush(
-  g: Graphics,
-  rawPoints: Point[],
-  lineWidth: number,
-  brushType: BrushType,
-  boundsMinY: number,
-  boundsMaxY: number,
-  startColor: string,
-  endColor: string,
-  pressureSensitivity = false,
-  sensitivity = 10,
-): void {
-  if (rawPoints.length < 2) return;
-  const points = rawPoints.length > 4 ? smoothPoints(rawPoints) : rawPoints;
-  const span = boundsMaxY - boundsMinY;
-
-  const sample = (y: number): string => {
-    const t = span > 0 ? Math.max(0, Math.min(1, (y - boundsMinY) / span)) : 0;
-    return blendHex(startColor, endColor, t);
-  };
-
-  if (brushType === "square") {
-    // Square draws one continuous path — use the average Y for a single colour.
-    const avgY = points.reduce((s, p) => s + p.y, 0) / points.length;
-    drawSquare(
-      g,
-      points,
-      lineWidth,
-      sample(avgY),
-      pressureSensitivity,
-      sensitivity,
-    );
-  } else {
-    // Round draws per-segment — each segment gets its own gradient sample.
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i],
-        p1 = points[i + 1];
-      const midY = (p0.y + p1.y) / 2;
-      const color = sample(midY);
-      const pressure =
-        (np(p0, pressureSensitivity, sensitivity) +
-          np(p1, pressureSensitivity, sensitivity)) /
-        2;
-      const w = Math.max(1, lineWidth * pressure);
-      const fromX = i > 0 ? (points[i - 1].x + p0.x) / 2 : p0.x;
-      const fromY = i > 0 ? (points[i - 1].y + p0.y) / 2 : p0.y;
-      const toX = (p0.x + p1.x) / 2;
-      const toY = (p0.y + p1.y) / 2;
-      g.moveTo(fromX, fromY)
-        .quadraticCurveTo(p0.x, p0.y, toX, toY)
-        .stroke({ width: w, color, cap: "round", join: "round" });
-    }
   }
 }
