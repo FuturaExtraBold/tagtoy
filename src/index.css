@@ -118,10 +118,6 @@ canvas {
   gap: 6px;
 }
 
-.ctrl-field--full {
-  grid-column: 1 / -1;
-}
-
 .ctrl-field--compact {
   min-width: 100px;
 }
@@ -315,7 +311,7 @@ canvas {
 
 .brush-option {
   display: flex;
-  min-height: 72px;
+  min-height: 48px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -325,7 +321,6 @@ canvas {
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  gap: 8px;
   transition:
     transform 140ms ease,
     background-color 140ms ease,
@@ -351,11 +346,6 @@ canvas {
   width: 24px;
   height: 24px;
   flex: none;
-}
-
-.brush-option span {
-  font-size: 11px;
-  font-weight: 700;
 }
 
 .ctrl-chip-row > *,

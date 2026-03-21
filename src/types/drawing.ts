@@ -1,5 +1,9 @@
 export type Point = { x: number; y: number; pressure: number };
-export type Stroke = { id: number; points: Point[]; renderPoints: Point[] };
+export type Stroke = {
+  id: number;
+  points: Point[];
+  renderPoints: Point[];
+};
 export type StyleMode = "tag" | "throwup" | "burner" | "wildstyle";
 export type GradientMode = "overlay" | "combined";
 export type BrushType = "round" | "square" | "calligraphy";

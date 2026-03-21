@@ -123,6 +123,7 @@ export function useDrawingCanvas(
   }, [config]);
 
   const baseOffscreenRef = useRef<OffscreenCanvas | null>(null);
+  const gradientOffscreenRef = useRef<OffscreenCanvas | null>(null);
   const logicalSizeRef = useRef({ width: 1, height: 1 });
   const isReadyRef = useRef(false);
   const isDrawingRef = useRef(false);
@@ -135,7 +136,11 @@ export function useDrawingCanvas(
   const getGlobalGradientBounds = useCallback(
     (extraPoints?: Point[]): Bounds | undefined => {
       const { style, gradientMode, strokes, renderConfig } = configRef.current;
-      if (style !== "burner" || gradientMode !== "combined") return undefined;
+      if (
+        (style !== "burner" && style !== "wildstyle") ||
+        gradientMode !== "combined"
+      )
+        return undefined;
       const gradientStrokes =
         extraPoints && extraPoints.length > 1
           ? [...strokes, createStroke(-1, extraPoints)]
@@ -202,8 +207,17 @@ export function useDrawingCanvas(
     const liveStrokes = strokes
       .slice(lockedStrokeCount)
       .filter((s) => !animatingIds.has(s.id));
-    const gradientBounds = getGlobalGradientBounds();
+    const isDrawing = currentPointsRef.current.length >= 2;
+    const gradientBounds = getGlobalGradientBounds(
+      isDrawing ? currentPointsRef.current : undefined,
+    );
     const now = performance.now();
+    const offscreen = gradientOffscreenRef.current ?? undefined;
+
+    const orderedLive =
+      style === "throwup" ? [...liveStrokes].reverse() : liveStrokes;
+    const orderedAnimating =
+      style === "throwup" ? [...animating].reverse() : animating;
 
     const drawBase = () => {
       if (baseOffscreenRef.current)
@@ -211,21 +225,18 @@ export function useDrawingCanvas(
     };
 
     const drawLive = () => {
-      if (liveStrokes.length === 0) return;
-      const ordered =
-        style === "throwup" ? [...liveStrokes].reverse() : liveStrokes;
-      renderStyleToCtx(ctx, style, ordered, gradientMode, renderConfig, {
+      if (orderedLive.length === 0) return;
+      renderStyleToCtx(ctx, style, orderedLive, gradientMode, renderConfig, {
         includeDrips: true,
         gradientBounds,
         canvasSize,
+        offscreen,
       });
     };
 
     const drawFx = () => {
-      if (animating.length === 0) return;
-      const ordered =
-        style === "throwup" ? [...animating].reverse() : animating;
-      for (const anim of ordered) {
+      if (orderedAnimating.length === 0) return;
+      for (const anim of orderedAnimating) {
         renderStyleToCtx(
           ctx,
           style,
@@ -239,13 +250,14 @@ export function useDrawingCanvas(
             ),
             gradientBounds,
             canvasSize,
+            offscreen,
           },
         );
       }
     };
 
     const drawPreview = () => {
-      if (currentPointsRef.current.length < 2) return;
+      if (!isDrawing) return;
       const previewStroke = createStroke(-1, currentPointsRef.current);
       renderStyleToCtx(
         ctx,
@@ -255,8 +267,9 @@ export function useDrawingCanvas(
         renderConfig,
         {
           includeDrips: false,
-          gradientBounds: getGlobalGradientBounds(currentPointsRef.current),
+          gradientBounds,
           canvasSize,
+          offscreen,
         },
       );
     };
@@ -364,6 +377,7 @@ export function useDrawingCanvas(
       canvas.width = w;
       canvas.height = h;
       logicalSizeRef.current = { width: w, height: h };
+      gradientOffscreenRef.current = new OffscreenCanvas(w, h);
       rebuildBaseOffscreen();
       renderFrame();
     };
@@ -397,6 +411,7 @@ export function useDrawingCanvas(
       canvas.removeEventListener("pointerleave", finishStroke);
       canvas.removeEventListener("pointercancel", finishStroke);
       baseOffscreenRef.current = null;
+      gradientOffscreenRef.current = null;
     };
   }, [
     canvasRef,

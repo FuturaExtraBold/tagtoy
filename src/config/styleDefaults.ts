@@ -59,7 +59,7 @@ export const STYLE_DEFAULTS: StyleDefaults = {
     shadowOffset: 50,
     shadowColor: "#cc00ff",
     shadowAngle: "45",
-    shadowAttached: true,
+    shadowAttached: false,
     outlineSize: 0,
     outlineColor: "#000000",
     gradientStart: "#0055ff",

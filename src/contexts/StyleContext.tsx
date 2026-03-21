@@ -35,12 +35,10 @@ const { tag: TAG, throwup: THROWUP, burner: BURNER } = STYLE_DEFAULTS;
 export function StyleProvider({ children }: { children: ReactNode }) {
   const [brushType, setBrushType] = useState<BrushType>(TAG.brushType);
   const [brushSize, setBrushSize] = useState(TAG.brushSize);
-  const [shadowOffset, setShadowOffset] = useState(THROWUP.shadowOffset);
-  const [shadowColor, setShadowColor] = useState(THROWUP.shadowColor);
-  const [shadowAngle, setShadowAngle] = useState<ShadowAngle>(
-    THROWUP.shadowAngle,
-  );
-  const [shadowAttached, setShadowAttached] = useState(THROWUP.shadowAttached);
+  const [shadowOffset, setShadowOffset] = useState(0);
+  const [shadowColor, setShadowColor] = useState("#000000");
+  const [shadowAngle, setShadowAngle] = useState<ShadowAngle>("45");
+  const [shadowAttached, setShadowAttached] = useState(false);
   const [outlineSize, setOutlineSize] = useState(THROWUP.outlineSize);
   const [outlineColor, setOutlineColor] = useState(THROWUP.outlineColor);
   const [throwupColor, setThrowupColor] = useState(THROWUP.throwupColor);
@@ -53,7 +51,7 @@ export function StyleProvider({ children }: { children: ReactNode }) {
 
   const handleBrushSize = useCallback((v: number) => {
     setBrushSize(v);
-    setOutlineSize((s) => Math.max(v, Math.min(s, v * 2)));
+    setOutlineSize((s) => (s === 0 ? 0 : Math.max(v, Math.min(s, v * 2))));
   }, []);
 
   return (

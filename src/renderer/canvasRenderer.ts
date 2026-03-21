@@ -20,6 +20,7 @@ interface RenderOptions {
   includeDrips?: boolean;
   gradientBounds?: Bounds;
   canvasSize?: { width: number; height: number };
+  offscreen?: OffscreenCanvas;
 }
 
 function seedForStroke(stroke: Stroke): number {
@@ -105,6 +106,7 @@ function renderGradientFill(
   config: RenderConfig,
   bounds: Bounds,
   canvasSize: { width: number; height: number },
+  offscreen?: OffscreenCanvas,
 ): void {
   const {
     brushSize,
@@ -115,8 +117,10 @@ function renderGradientFill(
     gradientEnd,
   } = config;
   const { width, height } = canvasSize;
-  const off = new OffscreenCanvas(width, height);
+  const off = offscreen ?? new OffscreenCanvas(width, height);
   const offCtx = off.getContext("2d")!;
+  offCtx.globalCompositeOperation = "source-over";
+  offCtx.clearRect(0, 0, width, height);
 
   drawBrush(
     offCtx,
@@ -188,20 +192,6 @@ function renderThrowupStrokeToCtx(
   const dripProgress = options.dripProgress ?? 1;
   const includeDrips = options.includeDrips ?? true;
 
-  if (includeDrips && showDrips) {
-    drawDrips(
-      ctx,
-      points,
-      outlineSize,
-      shadowColor,
-      seed,
-      dripCount,
-      dripProgress,
-      sx,
-      sy,
-    );
-  }
-
   if (shadowAttached && shadowOffset > 0) {
     drawExtrusion(
       ctx,
@@ -217,6 +207,20 @@ function renderThrowupStrokeToCtx(
     );
   } else if (shadowOffset > 0) {
     drawBlobBrush(ctx, points, outlineSize, shadowColor, sx, sy);
+  }
+
+  if (includeDrips && showDrips) {
+    drawDrips(
+      ctx,
+      points,
+      outlineSize,
+      shadowColor,
+      seed,
+      dripCount,
+      dripProgress,
+      sx,
+      sy,
+    );
   }
 
   drawBlobBrush(ctx, points, outlineSize, outlineColor);
@@ -265,20 +269,6 @@ function renderBurnerStrokeToCtx(
   const dripProgress = options.dripProgress ?? 1;
   const includeDrips = options.includeDrips ?? true;
 
-  if (includeDrips && showDrips) {
-    drawDrips(
-      ctx,
-      points,
-      shadowSize,
-      shadowColor,
-      seed,
-      dripCount,
-      dripProgress,
-      sx,
-      sy,
-    );
-  }
-
   if (shadowAttached && shadowOffset > 0) {
     drawExtrusion(
       ctx,
@@ -305,18 +295,41 @@ function renderBurnerStrokeToCtx(
     );
   }
 
-  drawBrush(
-    ctx,
-    points,
-    outlineSize,
-    brushType,
-    outlineColor,
-    pressureSensitivity,
-    sensitivity,
-  );
+  if (includeDrips && showDrips) {
+    drawDrips(
+      ctx,
+      points,
+      shadowSize,
+      shadowColor,
+      seed,
+      dripCount,
+      dripProgress,
+      sx,
+      sy,
+    );
+  }
+
+  if (outlineSize > 0) {
+    drawBrush(
+      ctx,
+      points,
+      outlineSize,
+      brushType,
+      outlineColor,
+      pressureSensitivity,
+      sensitivity,
+    );
+  }
 
   if (options.canvasSize) {
-    renderGradientFill(ctx, points, config, bounds, options.canvasSize);
+    renderGradientFill(
+      ctx,
+      points,
+      config,
+      bounds,
+      options.canvasSize,
+      options.offscreen,
+    );
   }
 }
 
@@ -327,48 +340,28 @@ function renderBurnerCombinedToCtx(
   options: RenderOptions,
 ): void {
   const {
-    brushSize,
-    shadowOffset,
-    shadowColor,
-    shadowAttached,
-    outlineSize,
-    outlineColor,
-    brushType,
-    showDrips,
-    dripCount,
-    pressureSensitivity,
-    sensitivity,
     gradientStart,
     gradientEnd,
+    outlineSize,
+    brushSize,
+    brushType,
+    shadowOffset,
+    shadowAttached,
+    shadowColor,
+    pressureSensitivity,
+    sensitivity,
+    outlineColor,
+    showDrips,
+    dripCount,
   } = config;
 
-  // When there is no outline, the shadow should match the fill brush size.
-  const shadowSize = outlineSize || brushSize;
-
-  const [sx, sy] = shadowCoords(config);
-  const pad = Math.max(brushSize, outlineSize) / 2;
-  const bounds = options.gradientBounds ?? getDrawingBounds(strokes, pad);
   const dripProgress = options.dripProgress ?? 1;
   const includeDrips = options.includeDrips ?? true;
 
-  if (includeDrips && showDrips) {
-    for (const stroke of strokes) {
-      const points =
-        stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
-      if (points.length < 2) continue;
-      drawDrips(
-        ctx,
-        points,
-        shadowSize,
-        shadowColor,
-        seedForStroke(stroke),
-        dripCount,
-        dripProgress,
-        sx,
-        sy,
-      );
-    }
-  }
+  const shadowSize = outlineSize || brushSize;
+  const pad = Math.max(brushSize, outlineSize) / 2;
+  const bounds = options.gradientBounds ?? getDrawingBounds(strokes, pad);
+  const [sx, sy] = shadowCoords(config);
 
   for (const stroke of strokes) {
     const points =
@@ -401,25 +394,48 @@ function renderBurnerCombinedToCtx(
     }
   }
 
-  for (const stroke of strokes) {
-    const points =
-      stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
-    if (points.length < 2) continue;
-    drawBrush(
-      ctx,
-      points,
-      outlineSize,
-      brushType,
-      outlineColor,
-      pressureSensitivity,
-      sensitivity,
-    );
+  if (includeDrips && showDrips) {
+    for (const stroke of strokes) {
+      const points =
+        stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+      if (points.length < 2) continue;
+      drawDrips(
+        ctx,
+        points,
+        shadowSize,
+        shadowColor,
+        seedForStroke(stroke),
+        dripCount,
+        dripProgress,
+        sx,
+        sy,
+      );
+    }
+  }
+
+  if (outlineSize > 0) {
+    for (const stroke of strokes) {
+      const points =
+        stroke.renderPoints.length > 1 ? stroke.renderPoints : stroke.points;
+      if (points.length < 2) continue;
+      drawBrush(
+        ctx,
+        points,
+        outlineSize,
+        brushType,
+        outlineColor,
+        pressureSensitivity,
+        sensitivity,
+      );
+    }
   }
 
   if (options.canvasSize) {
     const { width, height } = options.canvasSize;
-    const off = new OffscreenCanvas(width, height);
+    const off = options.offscreen ?? new OffscreenCanvas(width, height);
     const offCtx = off.getContext("2d")!;
+    offCtx.globalCompositeOperation = "source-over";
+    offCtx.clearRect(0, 0, width, height);
 
     for (const stroke of strokes) {
       const points =

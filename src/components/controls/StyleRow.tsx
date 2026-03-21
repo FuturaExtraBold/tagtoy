@@ -10,20 +10,34 @@ export function StyleRow() {
 
   const handleStyleChange = (next: StyleMode) => {
     const defaults = defaultsForStyle(next);
-    if (defaults.brushType) style.setBrushType(defaults.brushType);
-    if (defaults.brushSize) style.handleBrushSize(defaults.brushSize);
+    if (defaults.brushType !== undefined)
+      style.setBrushType(defaults.brushType);
+    if (defaults.brushSize !== undefined)
+      style.handleBrushSize(defaults.brushSize);
     if (defaults.shadowOffset !== undefined)
       style.setShadowOffset(defaults.shadowOffset);
-    if (defaults.shadowColor) style.setShadowColor(defaults.shadowColor);
-    if (defaults.shadowAngle) style.setShadowAngle(defaults.shadowAngle);
+    if (defaults.shadowColor !== undefined)
+      style.setShadowColor(defaults.shadowColor);
+    if (defaults.shadowAngle !== undefined)
+      style.setShadowAngle(defaults.shadowAngle);
     if (defaults.shadowAttached !== undefined)
       style.setShadowAttached(!!defaults.shadowAttached);
     if (defaults.outlineSize !== undefined)
       style.setOutlineSize(defaults.outlineSize);
-    if (defaults.outlineColor) style.setOutlineColor(defaults.outlineColor);
-    if (defaults.gradientStart) style.setGradientStart(defaults.gradientStart);
-    if (defaults.gradientEnd) style.setGradientEnd(defaults.gradientEnd);
-    if (defaults.gradientMode) setGradientMode(defaults.gradientMode);
+    if (defaults.outlineColor !== undefined)
+      style.setOutlineColor(defaults.outlineColor);
+    if (defaults.gradientStart !== undefined)
+      style.setGradientStart(defaults.gradientStart);
+    if (defaults.gradientEnd !== undefined)
+      style.setGradientEnd(defaults.gradientEnd);
+    if (defaults.showDrips !== undefined)
+      style.setShowDrips(defaults.showDrips);
+    if (defaults.dripCount !== undefined)
+      style.setDripCount(defaults.dripCount);
+    if (defaults.throwupColor !== undefined)
+      style.setThrowupColor(defaults.throwupColor);
+    if (defaults.gradientMode !== undefined)
+      setGradientMode(defaults.gradientMode);
     setStyle(next);
   };
 

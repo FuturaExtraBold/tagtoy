@@ -109,10 +109,11 @@ function drawChisel(
   offsetX = 0,
   offsetY = 0,
 ): void {
-  // Draw one filled quad per segment. Adjacent quads share their nib edge at
-  // each shared vertex, so there are no gaps at direction changes — the
-  // single-polygon approach can become self-intersecting and leave holes.
+  // All quads in one path, filled once. Each quad's winding is normalized to
+  // CCW so that where adjacent quads overlap the winding sums to 2 (filled)
+  // rather than cancelling to 0 (hole) under the nonzero fill rule.
   ctx.fillStyle = color;
+  ctx.beginPath();
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i];
     const p1 = points[i + 1];
@@ -124,14 +125,30 @@ function drawChisel(
       0.5,
       (lineWidth * 0.72 * np(p1, pressureSensitivity, sensitivity)) / 2,
     );
-    ctx.beginPath();
-    ctx.moveTo(p0.x + offsetX + NIB_DX * h0, p0.y + offsetY + NIB_DY * h0);
-    ctx.lineTo(p1.x + offsetX + NIB_DX * h1, p1.y + offsetY + NIB_DY * h1);
-    ctx.lineTo(p1.x + offsetX - NIB_DX * h1, p1.y + offsetY - NIB_DY * h1);
-    ctx.lineTo(p0.x + offsetX - NIB_DX * h0, p0.y + offsetY - NIB_DY * h0);
+    const ax = p0.x + offsetX + NIB_DX * h0;
+    const ay = p0.y + offsetY + NIB_DY * h0;
+    const bx = p1.x + offsetX + NIB_DX * h1;
+    const by = p1.y + offsetY + NIB_DY * h1;
+    const cx = p1.x + offsetX - NIB_DX * h1;
+    const cy = p1.y + offsetY - NIB_DY * h1;
+    const dx = p0.x + offsetX - NIB_DX * h0;
+    const dy = p0.y + offsetY - NIB_DY * h0;
+    // Signed area: positive = CCW in screen coords (Y-down). Reverse if CW.
+    const cross = (bx - ax) * (cy - by) - (by - ay) * (cx - bx);
+    if (cross >= 0) {
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(dx, dy);
+    } else {
+      ctx.moveTo(dx, dy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(ax, ay);
+    }
     ctx.closePath();
-    ctx.fill();
   }
+  ctx.fill();
 }
 
 export function drawBlobBrush(
