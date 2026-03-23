@@ -24,8 +24,6 @@ interface StyleContextValue extends RenderConfig {
   setGradientEnd: (v: string) => void;
   setShowDrips: (v: boolean) => void;
   setDripCount: (v: number) => void;
-  setPressureSensitivity: (v: boolean) => void;
-  setSensitivity: (v: number) => void;
 }
 
 const StyleContext = createContext<StyleContextValue | null>(null);
@@ -46,8 +44,6 @@ export function StyleProvider({ children }: { children: ReactNode }) {
   const [gradientEnd, setGradientEnd] = useState(BURNER.gradientEnd);
   const [showDrips, setShowDrips] = useState(TAG.showDrips);
   const [dripCount, setDripCount] = useState(TAG.dripCount);
-  const [pressureSensitivity, setPressureSensitivity] = useState(false);
-  const [sensitivity, setSensitivity] = useState(7);
 
   const handleBrushSize = useCallback((v: number) => {
     setBrushSize(v);
@@ -83,10 +79,6 @@ export function StyleProvider({ children }: { children: ReactNode }) {
         setShowDrips,
         dripCount,
         setDripCount,
-        pressureSensitivity,
-        setPressureSensitivity,
-        sensitivity,
-        setSensitivity,
       }}
     >
       {children}

@@ -7,8 +7,14 @@ import type { RenderConfig } from "../types/drawing";
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { strokes, lockedStrokeCount, activeStyle, gradientMode, addStroke } =
-    useCanvas();
+  const {
+    strokes,
+    lockedStrokeCount,
+    activeStyle,
+    gradientMode,
+    blend,
+    addStroke,
+  } = useCanvas();
   const style = useStyle();
 
   const renderConfig: RenderConfig = useMemo(
@@ -26,8 +32,6 @@ export function Canvas() {
       gradientEnd: style.gradientEnd,
       showDrips: style.showDrips,
       dripCount: style.dripCount,
-      pressureSensitivity: style.pressureSensitivity,
-      sensitivity: style.sensitivity,
     }),
     [
       style.brushType,
@@ -43,8 +47,6 @@ export function Canvas() {
       style.gradientEnd,
       style.showDrips,
       style.dripCount,
-      style.pressureSensitivity,
-      style.sensitivity,
     ],
   );
 
@@ -60,7 +62,13 @@ export function Canvas() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ display: "block", width: "100%", height: "100%" }}
+      style={{
+        display: "block",
+        width: "100%",
+        height: "100%",
+        mixBlendMode: blend ? "multiply" : "normal",
+        filter: blend ? "saturate(2)" : "none",
+      }}
     />
   );
 }

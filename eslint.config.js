@@ -22,7 +22,14 @@ export default [
       "@typescript-eslint": tsPlugin,
     },
     languageOptions: {
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        // WebGPU globals (not yet in the standard browser globals list)
+        GPUTextureFormat: "readonly",
+        GPUBufferUsage: "readonly",
+        GPUShaderStage: "readonly",
+        GPURenderPassDescriptor: "readonly",
+      },
       parser: tsParser,
       parserOptions: {
         ecmaVersion: "latest",

@@ -13,15 +13,9 @@ export function FillRow() {
   } = useStyle();
 
   return (
-    <section className="ctrl-row">
-      <div className="ctrl-row__header">
-        <div>
-          <p className="ctrl-row__title">Fill</p>
-          <p className="ctrl-row__note">Throwup color and gradient fill.</p>
-        </div>
-      </div>
-      <label className="ctrl-color-field ctrl-color-field--wide">
-        <span className="ctrl-mini-label">Throwup fill</span>
+    <>
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Fill</span>
         <input
           className="color-chip"
           type="color"
@@ -29,27 +23,26 @@ export function FillRow() {
           onChange={(e) => setThrowupColor(e.target.value)}
         />
       </label>
-      <div className="ctrl-swatch-grid">
-        <label className="ctrl-color-field">
-          <span className="ctrl-mini-label">Gradient start</span>
-          <input
-            className="color-chip"
-            type="color"
-            value={gradientStart}
-            onChange={(e) => setGradientStart(e.target.value)}
-          />
-        </label>
-        <label className="ctrl-color-field">
-          <span className="ctrl-mini-label">Gradient end</span>
-          <input
-            className="color-chip"
-            type="color"
-            value={gradientEnd}
-            onChange={(e) => setGradientEnd(e.target.value)}
-          />
-        </label>
-      </div>
-      <label className="check-label check-label--wide">
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Gradient start</span>
+        <input
+          className="color-chip"
+          type="color"
+          value={gradientStart}
+          onChange={(e) => setGradientStart(e.target.value)}
+        />
+      </label>
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Gradient end</span>
+        <input
+          className="color-chip"
+          type="color"
+          value={gradientEnd}
+          onChange={(e) => setGradientEnd(e.target.value)}
+        />
+      </label>
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Combined gradient</span>
         <input
           type="checkbox"
           checked={gradientMode === "combined"}
@@ -57,8 +50,7 @@ export function FillRow() {
             setGradientMode(e.target.checked ? "combined" : "overlay")
           }
         />
-        <span>Use one shared gradient across all strokes</span>
       </label>
-    </section>
+    </>
   );
 }

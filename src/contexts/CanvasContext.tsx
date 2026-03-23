@@ -15,12 +15,14 @@ interface CanvasContextValue {
   activeStyle: StyleMode;
   gradientMode: GradientMode;
   background: string;
+  blend: boolean;
   addStroke: (s: Stroke) => void;
   undo: () => void;
   clear: () => void;
   setStyle: (m: StyleMode) => void;
   setGradientMode: (m: GradientMode) => void;
   setBackground: (b: string) => void;
+  setBlend: (b: boolean) => void;
 }
 
 const CanvasContext = createContext<CanvasContextValue | null>(null);
@@ -33,6 +35,7 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
   const [activeStyle, setActiveStyle] = useState<StyleMode>("tag");
   const [gradientMode, setGradientMode] = useState<GradientMode>("overlay");
   const [background, setBackground] = useState("");
+  const [blend, setBlend] = useState(false);
 
   const addStroke = useCallback((s: Stroke) => {
     setStrokeState((prev) => {
@@ -73,12 +76,14 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
         activeStyle,
         gradientMode,
         background,
+        blend,
         addStroke,
         undo,
         clear,
         setStyle: setActiveStyle,
         setGradientMode,
         setBackground,
+        setBlend,
       }}
     >
       {children}

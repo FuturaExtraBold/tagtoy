@@ -4,8 +4,15 @@ import { useStyle } from "../../contexts/StyleContext";
 import type { StyleMode } from "../../types/drawing";
 
 export function StyleRow() {
-  const { activeStyle, background, setStyle, setGradientMode, setBackground } =
-    useCanvas();
+  const {
+    activeStyle,
+    background,
+    blend,
+    setStyle,
+    setGradientMode,
+    setBackground,
+    setBlend,
+  } = useCanvas();
   const style = useStyle();
 
   const handleStyleChange = (next: StyleMode) => {
@@ -36,42 +43,46 @@ export function StyleRow() {
       style.setDripCount(defaults.dripCount);
     if (defaults.throwupColor !== undefined)
       style.setThrowupColor(defaults.throwupColor);
-    if (defaults.gradientMode !== undefined)
-      setGradientMode(defaults.gradientMode);
     setStyle(next);
   };
 
   return (
-    <div className="controls__primary">
-      <label className="ctrl-field">
-        <span className="ctrl-field__label">Style</span>
+    <>
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Style</span>
         <div className="select-wrap">
           <select
-            aria-label="Style"
             value={activeStyle}
             onChange={(e) => handleStyleChange(e.target.value as StyleMode)}
           >
             <option value="tag">Tag</option>
             <option value="throwup">Throwup</option>
             <option value="burner">Burner</option>
-            <option value="wildstyle">Wild Style</option>
           </select>
         </div>
       </label>
-      <label className="ctrl-field">
-        <span className="ctrl-field__label">Background</span>
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Background</span>
         <div className="select-wrap">
           <select
-            aria-label="Background"
             value={background}
             onChange={(e) => setBackground(e.target.value)}
           >
             <option value="">White</option>
-            <option value="bricks-white.jpg">Bricks</option>
-            <option value="concrete-light.jpg">Concrete</option>
+            <option value="bricks.jpg">Bricks</option>
+            <option value="concrete.jpg">Concrete</option>
+            <option value="stucco.jpg">Stucco</option>
           </select>
         </div>
       </label>
-    </div>
+      <label className="ctrl-menu-item">
+        <span className="ctrl-menu-label">Blend</span>
+        <input
+          type="checkbox"
+          checked={blend}
+          onChange={(e) => setBlend(e.target.checked)}
+        />
+      </label>
+    </>
   );
 }
