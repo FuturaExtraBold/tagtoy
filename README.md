@@ -1,18 +1,61 @@
-# React + Vite
+# Legal Grafitti
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A WebGPU-powered graffiti painting app built with React.
 
-Currently, two official plugins are available:
+## What It Does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+A canvas-based drawing tool with graffiti-style rendering. Users can:
 
-## React Compiler
+- Draw freehand strokes with multiple graffiti styles — Tag, Throwup, Burner, and Bubble
+- Customize brush size, shadow, outline, and fill colors independently
+- Apply effects to tag style: bleed, glow, and chrome gradient
+- Enable drips on any layer (shadow, outline, fill)
+- Toggle spray paint texture overlay
+- Randomize the full color palette (fill, outline, shadow, background) in one click
+- Switch between street backgrounds (bricks, concrete, stucco, toys, bodega)
+- Export a composited PNG with background included
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick Start
 
-## Expanding the ESLint configuration
+```bash
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Dev server (http://localhost:5173)
+npm run dev
 
-# tagtoy
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Tech Stack
+
+- **React** - UI framework
+- **WebGPU** - GPU-accelerated stroke rendering with MSAA
+- **WGSL** - Custom shaders for gradient, texture, and alpha compositing
+- **Vite** - Build tool
+- **TypeScript** - Type safety throughout
+
+## Project Structure
+
+```text
+src/
+├── components/
+│   ├── controls/       # BrushRow, ShadowRow, OutlineRow, FillRow, TagRow, StyleRow, etc.
+│   ├── App.tsx         # Root component
+│   └── Canvas.tsx      # Drawing surface and input handling
+├── contexts/
+│   ├── CanvasContext.tsx   # Strokes, undo, export, background
+│   └── StyleContext.tsx    # All render style state
+├── renderer/
+│   └── webgpu/
+│       ├── GpuRenderer.ts  # Style planners (tag, throwup, burner, bubble)
+│       ├── tessellate.ts   # Stroke geometry (round, square, bubble, drips)
+│       └── shaders.ts      # WGSL vertex + fragment shaders
+├── hooks/              # useDrawingCanvas, useCursor, useKeyboardShortcuts
+├── config/             # Style defaults per mode
+└── types/              # drawing.ts — shared types
+```
