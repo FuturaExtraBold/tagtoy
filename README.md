@@ -1,4 +1,4 @@
-# Legal Grafitti
+# Legal Graffiti
 
 A WebGPU-powered graffiti painting app built with React.
 

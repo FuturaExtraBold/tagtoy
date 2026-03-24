@@ -111,7 +111,7 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "legal-grafitti.png";
+      a.download = "legal-graffiti.png";
       a.click();
       URL.revokeObjectURL(url);
     }, "image/png");
