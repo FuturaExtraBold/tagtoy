@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { useCanvas } from "../contexts/CanvasContext";
 import { useStyle } from "../contexts/StyleContext";
@@ -13,8 +13,15 @@ export function Canvas() {
     activeStyle,
     gradientMode,
     blend,
+    paintTexture,
     addStroke,
+    registerCanvas,
   } = useCanvas();
+
+  useEffect(() => {
+    registerCanvas(canvasRef.current);
+    return () => registerCanvas(null);
+  }, [registerCanvas]);
   const style = useStyle();
 
   const renderConfig: RenderConfig = useMemo(
@@ -56,6 +63,7 @@ export function Canvas() {
     style: activeStyle,
     gradientMode,
     renderConfig,
+    paintTexture,
     onStrokeComplete: addStroke,
   });
 

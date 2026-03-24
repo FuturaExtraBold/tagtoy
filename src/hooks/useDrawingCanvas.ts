@@ -24,6 +24,7 @@ interface DrawingCanvasConfig {
   style: StyleMode;
   gradientMode: GradientMode;
   renderConfig: RenderConfig;
+  paintTexture: HTMLImageElement | null;
   onStrokeComplete: (stroke: Stroke) => void;
 }
 
@@ -314,4 +315,11 @@ export function useDrawingCanvas(
     renderFrame,
     startLoop,
   ]);
+
+  // ── Sync paint texture ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    rendererRef.current?.setPaintTexture(config.paintTexture);
+    if (isReadyRef.current) renderFrame();
+  }, [config.paintTexture, renderFrame]);
 }

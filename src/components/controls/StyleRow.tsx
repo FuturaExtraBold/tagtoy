@@ -4,15 +4,8 @@ import { useStyle } from "../../contexts/StyleContext";
 import type { StyleMode } from "../../types/drawing";
 
 export function StyleRow() {
-  const {
-    activeStyle,
-    background,
-    blend,
-    setStyle,
-    setGradientMode,
-    setBackground,
-    setBlend,
-  } = useCanvas();
+  const { activeStyle, background, blend, setStyle, setBackground, setBlend } =
+    useCanvas();
   const style = useStyle();
 
   const handleStyleChange = (next: StyleMode) => {
@@ -72,6 +65,8 @@ export function StyleRow() {
             <option value="bricks.jpg">Bricks</option>
             <option value="concrete.jpg">Concrete</option>
             <option value="stucco.jpg">Stucco</option>
+            <option value="toys.jpg">Toys</option>
+            <option value="bodega.jpg">Bodega</option>
           </select>
         </div>
       </label>

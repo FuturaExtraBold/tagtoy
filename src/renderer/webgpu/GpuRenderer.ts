@@ -70,6 +70,10 @@ export class GpuRenderer {
   private vertexBuffer!: GPUBuffer;
   private vertexCapacity = 0; // in floats
   private msaaTexture: GPUTexture | null = null;
+  private fallbackTexture!: GPUTexture;
+  private paintTexture!: GPUTexture;
+  private textureSampler!: GPUSampler;
+  private useTexture = 0;
 
   // Scratch buffers reused each frame (avoids GC churn)
   private uniformScratch = new ArrayBuffer(MAX_DRAW_CALLS * UNIFORM_STRIDE);
@@ -113,12 +117,43 @@ export class GpuRenderer {
             minBindingSize: UNIFORM_SIZE,
           },
         },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: { sampleType: "float" },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: { type: "filtering" },
+        },
       ],
     });
 
     r.uniformBuffer = device.createBuffer({
       size: MAX_DRAW_CALLS * UNIFORM_STRIDE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    // 1×1 white fallback texture — always bound so the shader binding is valid
+    r.fallbackTexture = device.createTexture({
+      size: [1, 1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    });
+    device.queue.writeTexture(
+      { texture: r.fallbackTexture },
+      new Uint8Array([255, 255, 255, 255]),
+      { bytesPerRow: 4 },
+      [1, 1, 1],
+    );
+    r.paintTexture = r.fallbackTexture;
+
+    r.textureSampler = device.createSampler({
+      minFilter: "linear",
+      magFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat",
     });
 
     r.bindGroup = device.createBindGroup({
@@ -128,6 +163,8 @@ export class GpuRenderer {
           binding: 0,
           resource: { buffer: r.uniformBuffer, offset: 0, size: UNIFORM_SIZE },
         },
+        { binding: 1, resource: r.fallbackTexture.createView() },
+        { binding: 2, resource: r.textureSampler },
       ],
     });
 
@@ -312,10 +349,34 @@ export class GpuRenderer {
       this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
         color: hex4(cfg.outlineColor),
       });
+      if (cfg.showDrips && dripProg !== undefined) {
+        this.push(
+          tessellateDrips(
+            p,
+            cfg.outlineSize,
+            seed + 1000,
+            cfg.dripCount,
+            dripProg,
+          ),
+          { color: hex4(cfg.outlineColor) },
+        );
+      }
       // Fill
       this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
         color: hex4(cfg.throwupColor),
       });
+      if (cfg.showDrips && dripProg !== undefined) {
+        this.push(
+          tessellateDrips(
+            p,
+            cfg.brushSize,
+            seed + 2000,
+            cfg.dripCount,
+            dripProg,
+          ),
+          { color: hex4(cfg.throwupColor) },
+        );
+      }
     };
 
     if (preview) drawThrowup(preview);
@@ -395,6 +456,24 @@ export class GpuRenderer {
           });
         }
       }
+      // Pass 3.5: outline drips
+      if (cfg.showDrips && cfg.outlineSize > 0) {
+        for (const { stroke: s, dripProg } of all) {
+          if (!dripProg) continue;
+          const p = pts(s);
+          if (p.length < 2) continue;
+          this.push(
+            tessellateDrips(
+              p,
+              cfg.outlineSize,
+              seedFor(s) + 1000,
+              cfg.dripCount,
+              dripProg,
+            ),
+            { color: hex4(cfg.outlineColor) },
+          );
+        }
+      }
       // Pass 4: gradient fill
       const gmin = gradBounds?.minY ?? 0;
       const gmax = gradBounds?.maxY ?? this.height;
@@ -408,6 +487,30 @@ export class GpuRenderer {
           gradMinY: gmin,
           gradMaxY: gmax,
         });
+      }
+      // Pass 4.5: fill drips (same gradient as fill so color matches position)
+      if (cfg.showDrips) {
+        for (const { stroke: s, dripProg } of all) {
+          if (!dripProg) continue;
+          const p = pts(s);
+          if (p.length < 2) continue;
+          this.push(
+            tessellateDrips(
+              p,
+              cfg.brushSize,
+              seedFor(s) + 2000,
+              cfg.dripCount,
+              dripProg,
+            ),
+            {
+              useGradient: true,
+              gradientStart: hex4(cfg.gradientStart),
+              gradientEnd: hex4(cfg.gradientEnd),
+              gradMinY: gmin,
+              gradMaxY: gmax,
+            },
+          );
+        }
       }
     } else {
       // Overlay: per-stroke bounds
@@ -453,6 +556,18 @@ export class GpuRenderer {
           this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
             color: hex4(cfg.outlineColor),
           });
+          if (cfg.showDrips && dripProg) {
+            this.push(
+              tessellateDrips(
+                p,
+                cfg.outlineSize,
+                seedFor(s) + 1000,
+                cfg.dripCount,
+                dripProg,
+              ),
+              { color: hex4(cfg.outlineColor) },
+            );
+          }
         }
         this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
           useGradient: true,
@@ -461,6 +576,24 @@ export class GpuRenderer {
           gradMinY: bmin,
           gradMaxY: bmax,
         });
+        if (cfg.showDrips && dripProg) {
+          this.push(
+            tessellateDrips(
+              p,
+              cfg.brushSize,
+              seedFor(s) + 2000,
+              cfg.dripCount,
+              dripProg,
+            ),
+            {
+              useGradient: true,
+              gradientStart: hex4(cfg.gradientStart),
+              gradientEnd: hex4(cfg.gradientEnd),
+              gradMinY: bmin,
+              gradMaxY: bmax,
+            },
+          );
+        }
       }
     }
   }
@@ -526,7 +659,7 @@ export class GpuRenderer {
     w32(u.gradMinY ?? 0);
     w32(u.gradMaxY ?? this.height); // grad_min/max_y
     w32u(u.useGradient ? 1 : 0); // use_gradient
-    w32u(0); // _pad
+    w32u(this.useTexture); // use_texture
   }
 
   private renderPassDescriptor(): GPURenderPassDescriptor {
@@ -609,8 +742,60 @@ export class GpuRenderer {
     });
   }
 
+  // ── Paint texture ────────────────────────────────────────────────────────────
+
+  setPaintTexture(image: HTMLImageElement | null): void {
+    if (this.paintTexture !== this.fallbackTexture) {
+      this.paintTexture.destroy();
+    }
+    if (image === null) {
+      this.paintTexture = this.fallbackTexture;
+      this.useTexture = 0;
+    } else {
+      const w = image.naturalWidth || 1;
+      const h = image.naturalHeight || 1;
+      const tex = this.device.createTexture({
+        size: [w, h, 1],
+        format: "rgba8unorm",
+        usage:
+          GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      this.device.queue.copyExternalImageToTexture(
+        { source: image },
+        { texture: tex },
+        [w, h],
+      );
+      this.paintTexture = tex;
+      this.useTexture = 1;
+    }
+    this.rebuildBindGroup();
+  }
+
+  private rebuildBindGroup(): void {
+    this.bindGroup = this.device.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: this.uniformBuffer,
+            offset: 0,
+            size: UNIFORM_SIZE,
+          },
+        },
+        { binding: 1, resource: this.paintTexture.createView() },
+        { binding: 2, resource: this.textureSampler },
+      ],
+    });
+  }
+
   destroy(): void {
     this.msaaTexture?.destroy();
+    if (this.paintTexture !== this.fallbackTexture)
+      this.paintTexture?.destroy();
+    this.fallbackTexture?.destroy();
     this.vertexBuffer?.destroy();
     this.uniformBuffer?.destroy();
     this.context.unconfigure();

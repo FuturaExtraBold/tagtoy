@@ -4,6 +4,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useRef,
   useState,
 } from "react";
 
@@ -16,13 +17,17 @@ interface CanvasContextValue {
   gradientMode: GradientMode;
   background: string;
   blend: boolean;
+  paintTexture: HTMLImageElement | null;
   addStroke: (s: Stroke) => void;
   undo: () => void;
   clear: () => void;
+  exportImage: () => void;
   setStyle: (m: StyleMode) => void;
   setGradientMode: (m: GradientMode) => void;
   setBackground: (b: string) => void;
   setBlend: (b: boolean) => void;
+  setPaintTexture: (img: HTMLImageElement | null) => void;
+  registerCanvas: (el: HTMLCanvasElement | null) => void;
 }
 
 const CanvasContext = createContext<CanvasContextValue | null>(null);
@@ -33,9 +38,86 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
     lockedStrokeCount: number;
   }>({ strokes: [], lockedStrokeCount: 0 });
   const [activeStyle, setActiveStyle] = useState<StyleMode>("tag");
-  const [gradientMode, setGradientMode] = useState<GradientMode>("overlay");
+  const [gradientMode, setGradientMode] = useState<GradientMode>("combined");
   const [background, setBackground] = useState("");
   const [blend, setBlend] = useState(false);
+  const [paintTexture, setPaintTexture] = useState<HTMLImageElement | null>(
+    null,
+  );
+
+  const canvasElRef = useRef<HTMLCanvasElement | null>(null);
+  const backgroundRef = useRef(background);
+  const blendRef = useRef(blend);
+  backgroundRef.current = background;
+  blendRef.current = blend;
+
+  const registerCanvas = useCallback((el: HTMLCanvasElement | null) => {
+    canvasElRef.current = el;
+  }, []);
+
+  const exportImage = useCallback(() => {
+    const gpuCanvas = canvasElRef.current;
+    if (!gpuCanvas) return;
+
+    const w = gpuCanvas.width;
+    const h = gpuCanvas.height;
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext("2d");
+    if (!ctx) return;
+
+    const composite = () => {
+      // White base
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+
+      if (blendRef.current) {
+        ctx.globalCompositeOperation = "multiply";
+        ctx.drawImage(gpuCanvas, 0, 0);
+        ctx.globalCompositeOperation = "source-over";
+      } else {
+        ctx.drawImage(gpuCanvas, 0, 0);
+      }
+
+      offscreen.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "graf.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    };
+
+    if (backgroundRef.current) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, w, h);
+        if (blendRef.current) {
+          ctx.globalCompositeOperation = "multiply";
+          ctx.drawImage(gpuCanvas, 0, 0);
+          ctx.globalCompositeOperation = "source-over";
+        } else {
+          ctx.drawImage(gpuCanvas, 0, 0);
+        }
+        offscreen.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "graf.png";
+          a.click();
+          URL.revokeObjectURL(url);
+        }, "image/png");
+      };
+      img.src = `/backgrounds/${backgroundRef.current}`;
+    } else {
+      composite();
+    }
+  }, []);
 
   const addStroke = useCallback((s: Stroke) => {
     setStrokeState((prev) => {
@@ -77,13 +159,17 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
         gradientMode,
         background,
         blend,
+        paintTexture,
         addStroke,
         undo,
         clear,
+        exportImage,
         setStyle: setActiveStyle,
         setGradientMode,
         setBackground,
         setBlend,
+        setPaintTexture,
+        registerCanvas,
       }}
     >
       {children}
