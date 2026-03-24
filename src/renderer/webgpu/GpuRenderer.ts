@@ -107,6 +107,7 @@ export class GpuRenderer {
       device,
       format: r.format,
       alphaMode: "premultiplied",
+      colorSpace: "display-p3",
     });
 
     const module = device.createShaderModule({ code: SHADER_SOURCE });
@@ -227,6 +228,7 @@ export class GpuRenderer {
       device: this.device,
       format: this.format,
       alphaMode: "premultiplied",
+      colorSpace: "display-p3",
     });
     // Recreate MSAA texture to match new canvas size
     this.msaaTexture?.destroy();
@@ -549,10 +551,10 @@ export class GpuRenderer {
       }
     };
 
-    if (preview) drawBubble(preview);
     for (const anim of [...animating].reverse())
       drawBubble(anim.stroke, anim.progress);
     for (const s of ordered) drawBubble(s, 1);
+    if (preview) drawBubble(preview); // last = renders on top
   }
 
   private planBurner(
@@ -574,11 +576,12 @@ export class GpuRenderer {
     const [sx, sy] = shadowCoords(cfg);
     const shadowSize = cfg.outlineSize || cfg.brushSize;
 
+    // Preview (current stroke) goes last so it renders on top of existing strokes
     const all: Array<{ stroke: Stroke; dripProg?: number }> = [];
-    if (preview) all.push({ stroke: preview });
     for (const a of animating)
       all.push({ stroke: a.stroke, dripProg: a.progress });
     for (const s of live) all.push({ stroke: s, dripProg: 1 });
+    if (preview) all.push({ stroke: preview });
 
     if (effectiveMode === "combined") {
       // Pass 1: all shadows

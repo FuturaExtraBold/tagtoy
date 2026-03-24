@@ -61,7 +61,7 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
     canvasElRef.current = el;
   }, []);
 
-  const exportImage = useCallback(() => {
+  const exportImage = useCallback(async () => {
     const gpuCanvas = canvasElRef.current;
     if (!gpuCanvas) return;
 
@@ -71,62 +71,50 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
     const offscreen = document.createElement("canvas");
     offscreen.width = w;
     offscreen.height = h;
-    // Use display-p3 to match the browser's wide-color rendering of the WebGPU
-    // canvas — prevents desaturation when compositing on P3 displays.
+    // P3 canvas matches the WebGPU canvas color space — no conversion, export
+    // looks identical to what's on screen on P3 displays.
     const ctx =
       offscreen.getContext("2d", { colorSpace: "display-p3" }) ??
       offscreen.getContext("2d");
     if (!ctx) return;
 
-    const composite = () => {
-      // White base
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, w, h);
+    // White base
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
 
-      if (blendRef.current) {
-        ctx.globalCompositeOperation = "multiply";
-        ctx.drawImage(gpuCanvas, 0, 0);
-        ctx.globalCompositeOperation = "source-over";
-      } else {
-        ctx.drawImage(gpuCanvas, 0, 0);
-      }
-
-      offscreen.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "graf.png";
-        a.click();
-        URL.revokeObjectURL(url);
-      }, "image/png");
-    };
-
+    // Draw background image with cover sizing (matches CSS background-size: cover)
     if (backgroundRef.current) {
       const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, w, h);
-        if (blendRef.current) {
-          ctx.globalCompositeOperation = "multiply";
-          ctx.drawImage(gpuCanvas, 0, 0);
-          ctx.globalCompositeOperation = "source-over";
-        } else {
-          ctx.drawImage(gpuCanvas, 0, 0);
-        }
-        offscreen.toBlob((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "graf.png";
-          a.click();
-          URL.revokeObjectURL(url);
-        }, "image/png");
-      };
-      img.src = `/backgrounds/${backgroundRef.current}`;
-    } else {
-      composite();
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.src = `/backgrounds/${backgroundRef.current}`;
+      });
+      const iw = img.naturalWidth;
+      const ih = img.naturalHeight;
+      const scale = Math.max(w / iw, h / ih);
+      const sw = iw * scale;
+      const sh = ih * scale;
+      ctx.drawImage(img, (w - sw) / 2, (h - sh) / 2, sw, sh);
     }
+
+    // Replicate canvas CSS: filter:saturate(2) + mix-blend-mode:multiply when blend is on
+    if (blendRef.current) {
+      ctx.filter = "saturate(2)";
+      ctx.globalCompositeOperation = "multiply";
+    }
+    ctx.drawImage(gpuCanvas, 0, 0);
+    ctx.filter = "none";
+    ctx.globalCompositeOperation = "source-over";
+
+    offscreen.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "legal-grafitti.png";
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
   }, []);
 
   const addStroke = useCallback((s: Stroke) => {
