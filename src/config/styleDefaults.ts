@@ -25,7 +25,7 @@ type StyleDefaults = {
 export const STYLE_DEFAULTS: StyleDefaults = {
   tag: {
     brushType: "round",
-    brushSize: 100,
+    brushSize: 36,
     showDrips: false,
     dripCount: 3,
     tagColor: "#000000",
@@ -38,12 +38,12 @@ export const STYLE_DEFAULTS: StyleDefaults = {
   },
   throwup: {
     brushType: "round",
-    brushSize: 120,
+    brushSize: 72,
     shadowOffset: 40,
     shadowColor: "#000000",
     shadowAngle: "45",
     shadowAttached: false,
-    outlineSize: 160,
+    outlineSize: 96,
     outlineColor: "#000000",
     throwupColor: "#ffffff",
     showDrips: false,
