@@ -40,7 +40,7 @@ export function Canvas() {
       showDrips: style.showDrips,
       dripCount: style.dripCount,
       tagColor: style.tagColor,
-      tagEffect: style.tagEffect,
+      oversprayAmount: style.oversprayAmount,
     }),
     [
       style.brushType,
@@ -57,7 +57,7 @@ export function Canvas() {
       style.showDrips,
       style.dripCount,
       style.tagColor,
-      style.tagEffect,
+      style.oversprayAmount,
     ],
   );
 

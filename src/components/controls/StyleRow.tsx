@@ -1,7 +1,7 @@
 import { defaultsForStyle } from "../../config/styleDefaults";
 import { useCanvas } from "../../contexts/CanvasContext";
 import { useStyle } from "../../contexts/StyleContext";
-import type { StyleMode, TagEffect } from "../../types/drawing";
+import type { StyleMode } from "../../types/drawing";
 
 export function StyleRow() {
   const { activeStyle, background, blend, setStyle, setBackground, setBlend } =
@@ -37,8 +37,11 @@ export function StyleRow() {
     if (defaults.throwupColor !== undefined)
       style.setThrowupColor(defaults.throwupColor);
     if (defaults.tagColor !== undefined) style.setTagColor(defaults.tagColor);
-    if (defaults.tagEffect !== undefined)
-      style.setTagEffect(defaults.tagEffect as TagEffect);
+    if (defaults.oversprayAmount !== undefined)
+      style.setOversprayAmount(defaults.oversprayAmount);
+    if (next === "tag") setBackground("toys.jpg");
+    if (next === "throwup") { setBackground("concrete.jpg"); setBlend(false); }
+    if (next === "burner") { setBackground("bricks.jpg"); setBlend(true); }
     setStyle(next);
   };
 
@@ -54,7 +57,6 @@ export function StyleRow() {
             <option value="tag">Tag</option>
             <option value="throwup">Throwup</option>
             <option value="burner">Burner</option>
-            <option value="bubble">Bubble</option>
           </select>
         </div>
       </label>

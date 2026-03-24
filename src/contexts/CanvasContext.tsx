@@ -40,7 +40,7 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
   }>({ strokes: [], lockedStrokeCount: 0 });
   const [activeStyle, setActiveStyle] = useState<StyleMode>("tag");
   const [gradientMode, setGradientMode] = useState<GradientMode>("combined");
-  const [background, setBackground] = useState("");
+  const [background, setBackground] = useState("toys.jpg");
   const [blend, setBlend] = useState(false);
   const [paintTexture, setPaintTexture] = useState<HTMLImageElement | null>(
     null,

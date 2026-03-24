@@ -8,12 +8,7 @@ import {
 } from "react";
 
 import { STYLE_DEFAULTS } from "../config/styleDefaults";
-import type {
-  BrushType,
-  RenderConfig,
-  ShadowAngle,
-  TagEffect,
-} from "../types/drawing";
+import type { BrushType, RenderConfig, ShadowAngle } from "../types/drawing";
 
 interface StyleContextValue extends RenderConfig {
   setBrushType: (v: BrushType) => void;
@@ -30,7 +25,7 @@ interface StyleContextValue extends RenderConfig {
   setShowDrips: (v: boolean) => void;
   setDripCount: (v: number) => void;
   setTagColor: (v: string) => void;
-  setTagEffect: (v: TagEffect) => void;
+  setOversprayAmount: (v: number) => void;
 }
 
 const StyleContext = createContext<StyleContextValue | null>(null);
@@ -52,7 +47,7 @@ export function StyleProvider({ children }: { children: ReactNode }) {
   const [showDrips, setShowDrips] = useState(TAG.showDrips);
   const [dripCount, setDripCount] = useState(TAG.dripCount);
   const [tagColor, setTagColor] = useState(TAG.tagColor);
-  const [tagEffect, setTagEffect] = useState<TagEffect>(TAG.tagEffect);
+  const [oversprayAmount, setOversprayAmount] = useState(TAG.oversprayAmount);
 
   const handleBrushSize = useCallback((v: number) => {
     setBrushSize(v);
@@ -90,8 +85,8 @@ export function StyleProvider({ children }: { children: ReactNode }) {
         setDripCount,
         tagColor,
         setTagColor,
-        tagEffect,
-        setTagEffect,
+        oversprayAmount,
+        setOversprayAmount,
       }}
     >
       {children}

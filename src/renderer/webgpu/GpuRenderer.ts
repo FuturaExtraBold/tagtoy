@@ -14,8 +14,8 @@ import {
 } from "./shaders";
 import {
   concatF32,
-  tessellateBubble,
   tessellateDrips,
+  tessellateOverspray,
   tessellateStroke,
 } from "./tessellate";
 
@@ -270,8 +270,6 @@ export class GpuRenderer {
       this.planTag(strokes, config, preview);
     } else if (style === "throwup") {
       this.planThrowup(strokes, config, animating, preview);
-    } else if (style === "bubble") {
-      this.planBubble(strokes, config, animating, preview);
     } else {
       this.planBurner(
         strokes,
@@ -300,21 +298,6 @@ export class GpuRenderer {
       const seed = seedFor(s);
       const [sx, sy] = shadowCoords(cfg);
 
-      // Bleed / Glow: multiple passes behind everything
-      if (cfg.tagEffect === "bleed" || cfg.tagEffect === "glow") {
-        const isGlow = cfg.tagEffect === "glow";
-        const steps = 5;
-        const spreadMult = isGlow ? 0.5 : 0.2;
-        const baseAlpha = isGlow ? 0.12 : 0.06;
-        for (let i = steps; i >= 1; i--) {
-          const size = cfg.brushSize * (1 + i * spreadMult);
-          const alpha = baseAlpha / i;
-          this.push(tessellateStroke(p, size, cfg.brushType), {
-            color: isGlow ? hex4(cfg.tagColor, alpha) : hex4("#000000", alpha),
-          });
-        }
-      }
-
       // Shadow
       if (cfg.shadowOffset > 0) {
         this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
@@ -330,50 +313,24 @@ export class GpuRenderer {
         });
       }
 
-      // Fill
-      if (cfg.tagEffect === "chrome") {
-        let bmin = Infinity,
-          bmax = -Infinity;
-        for (const pt of p) {
-          bmin = Math.min(bmin, pt.y);
-          bmax = Math.max(bmax, pt.y);
-        }
-        const pad = cfg.brushSize / 2;
-        this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
-          useGradient: true,
-          gradientStart: hex4(cfg.gradientStart),
-          gradientEnd: hex4(cfg.gradientEnd),
-          gradMinY: bmin - pad,
-          gradMaxY: bmax + pad,
-        });
-      } else {
-        this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
-          color: hex4(cfg.tagColor),
-        });
+      // Overspray dots (behind fill, around stroke perimeter)
+      if (cfg.oversprayAmount > 0) {
+        this.push(
+          tessellateOverspray(p, cfg.brushSize, seed, cfg.oversprayAmount),
+          { color: hex4(cfg.tagColor, 0.45) },
+        );
       }
 
-      // Ink streaks / drips
+      // Fill
+      this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
+        color: hex4(cfg.tagColor),
+      });
+
+      // Drips
       if (cfg.showDrips) {
-        if (cfg.tagEffect === "chrome") {
-          let bmin = Infinity,
-            bmax = -Infinity;
-          for (const pt of p) {
-            bmin = Math.min(bmin, pt.y);
-            bmax = Math.max(bmax, pt.y);
-          }
-          const pad = cfg.brushSize / 2;
-          this.push(tessellateDrips(p, cfg.brushSize, seed, cfg.dripCount, 1), {
-            useGradient: true,
-            gradientStart: hex4(cfg.gradientStart),
-            gradientEnd: hex4(cfg.gradientEnd),
-            gradMinY: bmin - pad,
-            gradMaxY: bmax + pad,
-          });
-        } else {
-          this.push(tessellateDrips(p, cfg.brushSize, seed, cfg.dripCount, 1), {
-            color: hex4(cfg.tagColor),
-          });
-        }
+        this.push(tessellateDrips(p, cfg.brushSize, seed, cfg.dripCount, 1), {
+          color: hex4(cfg.tagColor),
+        });
       }
     }
   }
@@ -467,94 +424,6 @@ export class GpuRenderer {
     for (const anim of [...animating].reverse())
       drawThrowup(anim.stroke, anim.progress);
     for (const s of ordered) drawThrowup(s, 1);
-  }
-
-  private planBubble(
-    strokes: Stroke[],
-    cfg: RenderConfig,
-    animating: AnimatingStroke[],
-    preview: Stroke | null,
-  ): void {
-    const animIds = new Set(animating.map((a) => a.stroke.id));
-    const live = strokes.filter((s) => !animIds.has(s.id));
-    const ordered = [...live].reverse();
-
-    const drawBubble = (s: Stroke, dripProg?: number) => {
-      const p = pts(s);
-      if (p.length < 2) return;
-      const [sx, sy] = shadowCoords(cfg);
-      const seed = seedFor(s);
-
-      // Shadow — uniform round stroke so shadow is consistent
-      if (cfg.shadowOffset > 0) {
-        if (cfg.shadowAttached) {
-          this.extrude(
-            s,
-            cfg.outlineSize,
-            cfg.brushType,
-            sx,
-            sy,
-            cfg.shadowColor,
-          );
-        } else {
-          this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
-            color: hex4(cfg.shadowColor),
-            offset: [sx, sy],
-          });
-        }
-        if (cfg.showDrips && dripProg !== undefined) {
-          this.push(
-            tessellateDrips(
-              p,
-              cfg.outlineSize,
-              seed,
-              cfg.dripCount,
-              dripProg,
-              sx,
-              sy,
-            ),
-            { color: hex4(cfg.shadowColor) },
-          );
-        }
-      }
-      // Outline — uniform round stroke for consistent ring width
-      this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
-        color: hex4(cfg.outlineColor),
-      });
-      if (cfg.showDrips && dripProg !== undefined) {
-        this.push(
-          tessellateDrips(
-            p,
-            cfg.outlineSize,
-            seed + 1000,
-            cfg.dripCount,
-            dripProg,
-          ),
-          { color: hex4(cfg.outlineColor) },
-        );
-      }
-      // Fill — bubble tessellation: tapers at ends
-      this.push(tessellateBubble(p, cfg.brushSize), {
-        color: hex4(cfg.throwupColor),
-      });
-      if (cfg.showDrips && dripProg !== undefined) {
-        this.push(
-          tessellateDrips(
-            p,
-            cfg.brushSize,
-            seed + 2000,
-            cfg.dripCount,
-            dripProg,
-          ),
-          { color: hex4(cfg.throwupColor) },
-        );
-      }
-    };
-
-    for (const anim of [...animating].reverse())
-      drawBubble(anim.stroke, anim.progress);
-    for (const s of ordered) drawBubble(s, 1);
-    if (preview) drawBubble(preview); // last = renders on top
   }
 
   private planBurner(

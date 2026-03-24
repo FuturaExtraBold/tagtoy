@@ -256,58 +256,47 @@ export function tessellateSquare(
   return new Float32Array(out);
 }
 
-// ── Bubble brush (sine-envelope variable width) ───────────────────────────────
+// ── Overspray dots ────────────────────────────────────────────────────────────
 
-export function tessellateBubble(
+// amount: 0–100 controls density and spread
+export function tessellateOverspray(
   rawPoints: Point[],
   lineWidth: number,
+  seed: number,
+  amount: number,
 ): Float32Array {
-  if (rawPoints.length < 2) return new Float32Array(0);
-  const pts = rawPoints.length > 4 ? smooth(rawPoints) : rawPoints;
-  const n = pts.length;
-  const rMax = lineWidth / 2;
-  const rMin = rMax * 0.04;
+  if (rawPoints.length < 2 || amount <= 0) return new Float32Array(0);
+  const smoothed = rawPoints.length > 4 ? smooth(rawPoints) : rawPoints;
+  const rand = seededRand(seed);
+  const r = lineWidth / 2;
   const out: number[] = [];
+  const N = 6; // triangles per dot
+  const t = amount / 100; // normalised 0–1
+  const maxDots = Math.max(1, Math.round(2 + t * 5)); // 2–7 dots per point
+  const maxSpread = 0.7 + t * 1.6; // r × (0.7–2.3)
 
-  // Per-point radius: raised-sine envelope — exponent < 1 keeps center fatter
-  const radii: number[] = pts.map((_, i) => {
-    const t = i / (n - 1);
-    return rMin + (rMax - rMin) * Math.pow(Math.sin(Math.PI * t), 0.35);
-  });
-
-  // Pass radii so arc fans at corners scale to local width, not always rMax
-  const joins = buildJoins(pts, rMax, out, radii);
-
-  for (let i = 0; i < n - 1; i++) {
-    const p0 = pts[i],
-      p1 = pts[i + 1];
-    const [nx0, ny0] = joins[i][0];
-    const [nx1, ny1] = joins[i][1];
-    const r0 = radii[i];
-    const r1 = radii[i + 1];
-    out.push(
-      p0.x + nx0 * r0,
-      p0.y + ny0 * r0,
-      p0.x - nx0 * r0,
-      p0.y - ny0 * r0,
-      p1.x + nx1 * r1,
-      p1.y + ny1 * r1,
-      p0.x - nx0 * r0,
-      p0.y - ny0 * r0,
-      p1.x - nx1 * r1,
-      p1.y - ny1 * r1,
-      p1.x + nx1 * r1,
-      p1.y + ny1 * r1,
-    );
+  for (const p of smoothed) {
+    const dotsHere = Math.max(1, Math.floor(rand() * maxDots + 1));
+    for (let d = 0; d < dotsHere; d++) {
+      const angle = rand() * Math.PI * 2;
+      const dist = r * (0.45 + rand() * maxSpread);
+      const cx = p.x + Math.cos(angle) * dist;
+      const cy = p.y + Math.sin(angle) * dist;
+      const dotR = lineWidth * (0.013 + rand() * 0.038 * t + 0.009);
+      for (let k = 0; k < N; k++) {
+        const a0 = (k / N) * Math.PI * 2;
+        const a1 = ((k + 1) / N) * Math.PI * 2;
+        out.push(
+          cx,
+          cy,
+          cx + Math.cos(a0) * dotR,
+          cy + Math.sin(a0) * dotR,
+          cx + Math.cos(a1) * dotR,
+          cy + Math.sin(a1) * dotR,
+        );
+      }
+    }
   }
-
-  // Small caps at the tapered ends
-  const p0 = pts[0],
-    p1 = pts[1];
-  semicap(out, p0.x, p0.y, rMin, Math.atan2(p0.y - p1.y, p0.x - p1.x));
-  const pn = pts[n - 1],
-    pn1 = pts[n - 2];
-  semicap(out, pn.x, pn.y, rMin, Math.atan2(pn.y - pn1.y, pn.x - pn1.x));
 
   return new Float32Array(out);
 }
