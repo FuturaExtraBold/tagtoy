@@ -40,8 +40,14 @@ export function StyleRow() {
     if (defaults.oversprayAmount !== undefined)
       style.setOversprayAmount(defaults.oversprayAmount);
     if (next === "tag") setBackground("toys.jpg");
-    if (next === "throwup") { setBackground("concrete.jpg"); setBlend(false); }
-    if (next === "burner") { setBackground("bricks.jpg"); setBlend(true); }
+    if (next === "throwup") {
+      setBackground("concrete.jpg");
+      setBlend(false);
+    }
+    if (next === "burner") {
+      setBackground("bricks.jpg");
+      setBlend(true);
+    }
     setStyle(next);
   };
 
