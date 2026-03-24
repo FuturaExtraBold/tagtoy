@@ -47,8 +47,9 @@ function pick<T>(arr: T[]): T {
 }
 
 export function RandomizeButton() {
-  const { setBackground } = useCanvas();
-  const { setGradientStart, setGradientEnd, setOutlineColor } = useStyle();
+  const { setBackground, activeStyle } = useCanvas();
+  const { setGradientStart, setGradientEnd, setOutlineColor, setTagColor } =
+    useStyle();
 
   const handleRandomize = () => {
     const [startHex, startHue] = randomVividHex();
@@ -57,6 +58,10 @@ export function RandomizeButton() {
     setGradientEnd(endHex);
     setOutlineColor(pick(OUTLINE_COLORS));
     setBackground(pick(BACKGROUNDS));
+    if (activeStyle === "tag") {
+      const [tagHex] = randomVividHex();
+      setTagColor(tagHex);
+    }
   };
 
   return (

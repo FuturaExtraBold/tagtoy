@@ -39,6 +39,8 @@ export function Canvas() {
       gradientEnd: style.gradientEnd,
       showDrips: style.showDrips,
       dripCount: style.dripCount,
+      tagColor: style.tagColor,
+      tagEffect: style.tagEffect,
     }),
     [
       style.brushType,
@@ -54,6 +56,8 @@ export function Canvas() {
       style.gradientEnd,
       style.showDrips,
       style.dripCount,
+      style.tagColor,
+      style.tagEffect,
     ],
   );
 

@@ -1,5 +1,4 @@
 import { useStyle } from "../../contexts/StyleContext";
-import type { ShadowAngle } from "../../types/drawing";
 
 export function ShadowRow() {
   const {
@@ -37,19 +36,40 @@ export function ShadowRow() {
           onChange={(e) => setShadowColor(e.target.value)}
         />
       </label>
-      <label className="ctrl-menu-item">
+      <div className="ctrl-menu-item">
         <span className="ctrl-menu-label">Shadow angle</span>
-        <div className="select-wrap">
-          <select
-            value={shadowAngle}
-            onChange={(e) => setShadowAngle(e.target.value as ShadowAngle)}
-          >
-            <option value="horizontal">Right</option>
-            <option value="45">Down-right</option>
-            <option value="vertical">Down</option>
-          </select>
+        <div className="brush-options" role="group" aria-label="Shadow angle">
+          {(
+            [
+              ["horizontal", "Right", "M4,12 H20 M13,6 L20,12 L13,18"],
+              ["45", "Down-right", "M6,6 L18,18 M10,18 H18 V10"],
+              ["vertical", "Down", "M12,4 V20 M6,13 L12,20 L18,13"],
+            ] as const
+          ).map(([val, label, d]) => (
+            <button
+              key={val}
+              type="button"
+              aria-label={label}
+              aria-pressed={shadowAngle === val}
+              className={`brush-option${shadowAngle === val ? " is-active" : ""}`}
+              onClick={() => setShadowAngle(val)}
+            >
+              <svg
+                aria-hidden="true"
+                className="brush-option__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={d} />
+              </svg>
+            </button>
+          ))}
         </div>
-      </label>
+      </div>
       <label className="ctrl-menu-item">
         <span className="ctrl-menu-label">Shadow attached</span>
         <input

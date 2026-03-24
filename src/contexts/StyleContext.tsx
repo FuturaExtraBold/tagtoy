@@ -8,7 +8,12 @@ import {
 } from "react";
 
 import { STYLE_DEFAULTS } from "../config/styleDefaults";
-import type { BrushType, RenderConfig, ShadowAngle } from "../types/drawing";
+import type {
+  BrushType,
+  RenderConfig,
+  ShadowAngle,
+  TagEffect,
+} from "../types/drawing";
 
 interface StyleContextValue extends RenderConfig {
   setBrushType: (v: BrushType) => void;
@@ -24,6 +29,8 @@ interface StyleContextValue extends RenderConfig {
   setGradientEnd: (v: string) => void;
   setShowDrips: (v: boolean) => void;
   setDripCount: (v: number) => void;
+  setTagColor: (v: string) => void;
+  setTagEffect: (v: TagEffect) => void;
 }
 
 const StyleContext = createContext<StyleContextValue | null>(null);
@@ -44,6 +51,8 @@ export function StyleProvider({ children }: { children: ReactNode }) {
   const [gradientEnd, setGradientEnd] = useState(BURNER.gradientEnd);
   const [showDrips, setShowDrips] = useState(TAG.showDrips);
   const [dripCount, setDripCount] = useState(TAG.dripCount);
+  const [tagColor, setTagColor] = useState(TAG.tagColor);
+  const [tagEffect, setTagEffect] = useState<TagEffect>(TAG.tagEffect);
 
   const handleBrushSize = useCallback((v: number) => {
     setBrushSize(v);
@@ -79,6 +88,10 @@ export function StyleProvider({ children }: { children: ReactNode }) {
         setShowDrips,
         dripCount,
         setDripCount,
+        tagColor,
+        setTagColor,
+        tagEffect,
+        setTagEffect,
       }}
     >
       {children}

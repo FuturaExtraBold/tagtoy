@@ -4,10 +4,11 @@ export type Stroke = {
   points: Point[];
   renderPoints: Point[];
 };
-export type StyleMode = "tag" | "throwup" | "burner";
+export type StyleMode = "tag" | "throwup" | "burner" | "bubble";
 export type GradientMode = "overlay" | "combined";
 export type BrushType = "round" | "square";
 export type ShadowAngle = "horizontal" | "45" | "vertical";
+export type TagEffect = "none" | "bleed" | "glow" | "chrome";
 
 export interface RenderConfig {
   brushType: BrushType;
@@ -23,4 +24,6 @@ export interface RenderConfig {
   gradientEnd: string;
   showDrips: boolean;
   dripCount: number;
+  tagColor: string;
+  tagEffect: TagEffect;
 }

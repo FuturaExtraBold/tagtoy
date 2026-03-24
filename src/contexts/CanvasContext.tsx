@@ -4,6 +4,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -48,8 +49,13 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const backgroundRef = useRef(background);
   const blendRef = useRef(blend);
-  backgroundRef.current = background;
-  blendRef.current = blend;
+
+  useEffect(() => {
+    backgroundRef.current = background;
+  }, [background]);
+  useEffect(() => {
+    blendRef.current = blend;
+  }, [blend]);
 
   const registerCanvas = useCallback((el: HTMLCanvasElement | null) => {
     canvasElRef.current = el;

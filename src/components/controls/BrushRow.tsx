@@ -32,7 +32,7 @@ export function BrushRow() {
     dripCount,
     setDripCount,
   } = useStyle();
-  const showDripControls = activeStyle !== "tag";
+  const showDripControls = !!activeStyle; // drips available in all styles
 
   return (
     <>

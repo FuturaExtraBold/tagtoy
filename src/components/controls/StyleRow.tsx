@@ -1,7 +1,7 @@
 import { defaultsForStyle } from "../../config/styleDefaults";
 import { useCanvas } from "../../contexts/CanvasContext";
 import { useStyle } from "../../contexts/StyleContext";
-import type { StyleMode } from "../../types/drawing";
+import type { StyleMode, TagEffect } from "../../types/drawing";
 
 export function StyleRow() {
   const { activeStyle, background, blend, setStyle, setBackground, setBlend } =
@@ -36,6 +36,9 @@ export function StyleRow() {
       style.setDripCount(defaults.dripCount);
     if (defaults.throwupColor !== undefined)
       style.setThrowupColor(defaults.throwupColor);
+    if (defaults.tagColor !== undefined) style.setTagColor(defaults.tagColor);
+    if (defaults.tagEffect !== undefined)
+      style.setTagEffect(defaults.tagEffect as TagEffect);
     setStyle(next);
   };
 
@@ -51,6 +54,7 @@ export function StyleRow() {
             <option value="tag">Tag</option>
             <option value="throwup">Throwup</option>
             <option value="burner">Burner</option>
+            <option value="bubble">Bubble</option>
           </select>
         </div>
       </label>

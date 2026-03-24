@@ -254,6 +254,62 @@ export function tessellateSquare(
   return new Float32Array(out);
 }
 
+// ── Bubble brush (sine-envelope variable width) ───────────────────────────────
+
+export function tessellateBubble(
+  rawPoints: Point[],
+  lineWidth: number,
+): Float32Array {
+  if (rawPoints.length < 2) return new Float32Array(0);
+  const pts = rawPoints.length > 4 ? smooth(rawPoints) : rawPoints;
+  const n = pts.length;
+  const rMax = lineWidth / 2;
+  const rMin = rMax * 0.04;
+  const out: number[] = [];
+
+  // Per-point radius following a sine envelope
+  const radii: number[] = pts.map((_, i) => {
+    const t = i / (n - 1);
+    return rMin + (rMax - rMin) * Math.sin(Math.PI * t);
+  });
+
+  // buildJoins uses rMax for arc fans — minor approximation at tapered ends
+  const joins = buildJoins(pts, rMax, out);
+
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = pts[i],
+      p1 = pts[i + 1];
+    const [nx0, ny0] = joins[i][0];
+    const [nx1, ny1] = joins[i][1];
+    const r0 = radii[i];
+    const r1 = radii[i + 1];
+    out.push(
+      p0.x + nx0 * r0,
+      p0.y + ny0 * r0,
+      p0.x - nx0 * r0,
+      p0.y - ny0 * r0,
+      p1.x + nx1 * r1,
+      p1.y + ny1 * r1,
+      p0.x - nx0 * r0,
+      p0.y - ny0 * r0,
+      p1.x - nx1 * r1,
+      p1.y - ny1 * r1,
+      p1.x + nx1 * r1,
+      p1.y + ny1 * r1,
+    );
+  }
+
+  // Small caps at the tapered ends
+  const p0 = pts[0],
+    p1 = pts[1];
+  semicap(out, p0.x, p0.y, rMin, Math.atan2(p0.y - p1.y, p0.x - p1.x));
+  const pn = pts[n - 1],
+    pn1 = pts[n - 2];
+  semicap(out, pn.x, pn.y, rMin, Math.atan2(pn.y - pn1.y, pn.x - pn1.x));
+
+  return new Float32Array(out);
+}
+
 // ── Dispatch ──────────────────────────────────────────────────────────────────
 
 export function tessellateStroke(

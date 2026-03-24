@@ -5,10 +5,11 @@ import { OutlineRow } from "./OutlineRow";
 import { RandomizeButton } from "./RandomizeButton";
 import { ShadowRow } from "./ShadowRow";
 import { StyleRow } from "./StyleRow";
+import { TagRow } from "./TagRow";
 import { TextureRow } from "./TextureRow";
 
 export function ControlPanel() {
-  const { undo, clear, exportImage } = useCanvas();
+  const { undo, clear, exportImage, activeStyle } = useCanvas();
 
   return (
     <div className="controls">
@@ -19,7 +20,7 @@ export function ControlPanel() {
           <BrushRow />
           <ShadowRow />
           <OutlineRow />
-          <FillRow />
+          {activeStyle === "tag" ? <TagRow /> : <FillRow />}
           <TextureRow />
         </div>
         <div className="controls__footer">

@@ -12,7 +12,12 @@ import {
   UNIFORM_SIZE,
   UNIFORM_STRIDE,
 } from "./shaders";
-import { concatF32, tessellateDrips, tessellateStroke } from "./tessellate";
+import {
+  concatF32,
+  tessellateBubble,
+  tessellateDrips,
+  tessellateStroke,
+} from "./tessellate";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -263,6 +268,8 @@ export class GpuRenderer {
       this.planTag(strokes, config, preview);
     } else if (style === "throwup") {
       this.planThrowup(strokes, config, animating, preview);
+    } else if (style === "bubble") {
+      this.planBubble(strokes, config, animating, preview);
     } else {
       this.planBurner(
         strokes,
@@ -288,9 +295,84 @@ export class GpuRenderer {
     for (const s of all) {
       const p = pts(s);
       if (p.length < 2) continue;
-      this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
-        color: hex4("#000000"),
-      });
+      const seed = seedFor(s);
+      const [sx, sy] = shadowCoords(cfg);
+
+      // Bleed / Glow: multiple passes behind everything
+      if (cfg.tagEffect === "bleed" || cfg.tagEffect === "glow") {
+        const isGlow = cfg.tagEffect === "glow";
+        const steps = 5;
+        const spreadMult = isGlow ? 0.5 : 0.2;
+        const baseAlpha = isGlow ? 0.12 : 0.06;
+        for (let i = steps; i >= 1; i--) {
+          const size = cfg.brushSize * (1 + i * spreadMult);
+          const alpha = baseAlpha / i;
+          this.push(tessellateStroke(p, size, cfg.brushType), {
+            color: isGlow ? hex4(cfg.tagColor, alpha) : hex4("#000000", alpha),
+          });
+        }
+      }
+
+      // Shadow
+      if (cfg.shadowOffset > 0) {
+        this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
+          color: hex4(cfg.shadowColor),
+          offset: [sx, sy],
+        });
+      }
+
+      // Outline
+      if (cfg.outlineSize > 0) {
+        this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
+          color: hex4(cfg.outlineColor),
+        });
+      }
+
+      // Fill
+      if (cfg.tagEffect === "chrome") {
+        let bmin = Infinity,
+          bmax = -Infinity;
+        for (const pt of p) {
+          bmin = Math.min(bmin, pt.y);
+          bmax = Math.max(bmax, pt.y);
+        }
+        const pad = cfg.brushSize / 2;
+        this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
+          useGradient: true,
+          gradientStart: hex4(cfg.gradientStart),
+          gradientEnd: hex4(cfg.gradientEnd),
+          gradMinY: bmin - pad,
+          gradMaxY: bmax + pad,
+        });
+      } else {
+        this.push(tessellateStroke(p, cfg.brushSize, cfg.brushType), {
+          color: hex4(cfg.tagColor),
+        });
+      }
+
+      // Ink streaks / drips
+      if (cfg.showDrips) {
+        if (cfg.tagEffect === "chrome") {
+          let bmin = Infinity,
+            bmax = -Infinity;
+          for (const pt of p) {
+            bmin = Math.min(bmin, pt.y);
+            bmax = Math.max(bmax, pt.y);
+          }
+          const pad = cfg.brushSize / 2;
+          this.push(tessellateDrips(p, cfg.brushSize, seed, cfg.dripCount, 1), {
+            useGradient: true,
+            gradientStart: hex4(cfg.gradientStart),
+            gradientEnd: hex4(cfg.gradientEnd),
+            gradMinY: bmin - pad,
+            gradMaxY: bmax + pad,
+          });
+        } else {
+          this.push(tessellateDrips(p, cfg.brushSize, seed, cfg.dripCount, 1), {
+            color: hex4(cfg.tagColor),
+          });
+        }
+      }
     }
   }
 
@@ -383,6 +465,87 @@ export class GpuRenderer {
     for (const anim of [...animating].reverse())
       drawThrowup(anim.stroke, anim.progress);
     for (const s of ordered) drawThrowup(s, 1);
+  }
+
+  private planBubble(
+    strokes: Stroke[],
+    cfg: RenderConfig,
+    animating: AnimatingStroke[],
+    preview: Stroke | null,
+  ): void {
+    const animIds = new Set(animating.map((a) => a.stroke.id));
+    const live = strokes.filter((s) => !animIds.has(s.id));
+    const ordered = [...live].reverse();
+
+    const drawBubble = (s: Stroke, dripProg?: number) => {
+      const p = pts(s);
+      if (p.length < 2) return;
+      const [sx, sy] = shadowCoords(cfg);
+      const seed = seedFor(s);
+
+      // Shadow
+      if (cfg.shadowOffset > 0) {
+        if (cfg.shadowAttached) {
+          this.extrudeBubble(s, cfg.outlineSize, sx, sy, cfg.shadowColor);
+        } else {
+          this.push(tessellateBubble(p, cfg.outlineSize), {
+            color: hex4(cfg.shadowColor),
+            offset: [sx, sy],
+          });
+        }
+        if (cfg.showDrips && dripProg !== undefined) {
+          this.push(
+            tessellateDrips(
+              p,
+              cfg.outlineSize,
+              seed,
+              cfg.dripCount,
+              dripProg,
+              sx,
+              sy,
+            ),
+            { color: hex4(cfg.shadowColor) },
+          );
+        }
+      }
+      // Outline
+      this.push(tessellateBubble(p, cfg.outlineSize), {
+        color: hex4(cfg.outlineColor),
+      });
+      if (cfg.showDrips && dripProg !== undefined) {
+        this.push(
+          tessellateDrips(
+            p,
+            cfg.outlineSize,
+            seed + 1000,
+            cfg.dripCount,
+            dripProg,
+          ),
+          { color: hex4(cfg.outlineColor) },
+        );
+      }
+      // Fill
+      this.push(tessellateBubble(p, cfg.brushSize), {
+        color: hex4(cfg.throwupColor),
+      });
+      if (cfg.showDrips && dripProg !== undefined) {
+        this.push(
+          tessellateDrips(
+            p,
+            cfg.brushSize,
+            seed + 2000,
+            cfg.dripCount,
+            dripProg,
+          ),
+          { color: hex4(cfg.throwupColor) },
+        );
+      }
+    };
+
+    if (preview) drawBubble(preview);
+    for (const anim of [...animating].reverse())
+      drawBubble(anim.stroke, anim.progress);
+    for (const s of ordered) drawBubble(s, 1);
   }
 
   private planBurner(
@@ -613,6 +776,25 @@ export class GpuRenderer {
     if (dist < 1) return;
     const steps = Math.min(20, Math.ceil(dist / Math.max(1, lineWidth * 0.4)));
     const verts = tessellateStroke(p, lineWidth, brushType);
+    const c = hex4(color);
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      this.push(verts, { color: c, offset: [sx * t, sy * t] });
+    }
+  }
+
+  private extrudeBubble(
+    stroke: Stroke,
+    lineWidth: number,
+    sx: number,
+    sy: number,
+    color: string,
+  ): void {
+    const p = pts(stroke);
+    const dist = Math.hypot(sx, sy);
+    if (dist < 1) return;
+    const steps = Math.min(20, Math.ceil(dist / Math.max(1, lineWidth * 0.4)));
+    const verts = tessellateBubble(p, lineWidth);
     const c = hex4(color);
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
