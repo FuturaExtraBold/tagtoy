@@ -202,11 +202,12 @@ canvas {
 }
 
 .ctrl-menu-item input[type="checkbox"]::before {
-  width: 11px;
-  height: 11px;
-  border-radius: 3px;
-  background: var(--button);
-  content: "";
+  content: "✕";
+  color: var(--button);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  -webkit-text-stroke: 0.6px currentColor;
   transform: scale(0);
   transition: transform 140ms ease;
 }
@@ -228,8 +229,8 @@ canvas {
 }
 
 .ctrl-menu-item input[type="range"]::-webkit-slider-runnable-track {
-  height: 7px;
-  border-radius: 999px;
+  height: 8px;
+  border-radius: 10px;
   background: linear-gradient(
     90deg,
     rgb(34 28 21 / 0.95),
@@ -238,20 +239,22 @@ canvas {
 }
 
 .ctrl-menu-item input[type="range"]::-webkit-slider-thumb {
-  width: 22px;
-  height: 22px;
-  border: 2px solid rgb(255 252 245 / 0.92);
-  border-radius: 50%;
-  margin-top: -8px;
+  width: 28px;
+  height: 18px;
+  border: none;
+  border-radius: 6px;
+  margin-top: -5px;
   appearance: none;
   background: var(--button);
-  box-shadow: 0 2px 8px rgb(34 28 21 / 0.25);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 252 245 / 0.92),
+    0 2px 8px rgb(34 28 21 / 0.3);
 }
 
 .ctrl-menu-item input[type="range"]::-moz-range-track {
-  height: 7px;
+  height: 8px;
   border: none;
-  border-radius: 999px;
+  border-radius: 10px;
   background: linear-gradient(
     90deg,
     rgb(34 28 21 / 0.95),
@@ -260,12 +263,14 @@ canvas {
 }
 
 .ctrl-menu-item input[type="range"]::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border: 2px solid rgb(255 252 245 / 0.92);
-  border-radius: 50%;
+  width: 28px;
+  height: 18px;
+  border: none;
+  border-radius: 6px;
   background: var(--button);
-  box-shadow: 0 2px 8px rgb(34 28 21 / 0.25);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 252 245 / 0.92),
+    0 2px 8px rgb(34 28 21 / 0.3);
 }
 
 /* ── Color chip ── */
@@ -306,8 +311,8 @@ canvas {
 
 .brush-option {
   display: flex;
-  width: 40px;
-  height: 40px;
+  width: 26px;
+  height: 26px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
@@ -336,23 +341,34 @@ canvas {
 }
 
 .brush-option__icon {
-  width: 20px;
-  height: 20px;
+  width: 12px;
+  height: 12px;
   flex: none;
 }
 
-/* ── Footer ── */
+/* ── Actions grid (all 4 buttons: Clear, Undo, Randomize, Export) ── */
 
-.controls__footer {
+.controls__actions {
   display: grid;
   gap: 8px;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 1fr 1fr;
 }
 
 .controls__clear,
-.controls__undo {
+.controls__undo,
+.controls__randomize,
+.controls__export {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 14px;
   border-radius: 14px;
   cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
   transition:
     transform 140ms ease,
     background-color 140ms ease,
@@ -360,34 +376,30 @@ canvas {
     border-color 140ms ease;
 }
 
-.controls__clear {
-  padding: 0 14px;
+.controls__clear,
+.controls__randomize,
+.controls__export {
   border: 1px solid var(--line);
   background: var(--surface-strong);
-  color: var(--text);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 
-.controls__clear:hover {
+.controls__clear:hover,
+.controls__randomize:hover,
+.controls__export:hover {
   background: var(--surface-pressed);
+  color: var(--text);
+  transform: translateY(-1px);
 }
 
 .controls__undo {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  padding: 13px 14px;
   border: 1px solid rgb(26 21 14 / 0.85);
   background: linear-gradient(135deg, var(--button), var(--button-strong));
   box-shadow: 0 14px 28px rgb(23 19 14 / 0.2);
   color: var(--button-text);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  gap: 10px;
 }
 
 .controls__undo:hover {
@@ -401,41 +413,6 @@ canvas {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-/* ── Bottom actions (Randomize + Export) ── */
-
-.controls__actions {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 1fr 1fr;
-}
-
-.controls__randomize,
-.controls__export {
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-strong);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  transition:
-    background-color 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
-}
-
-.controls__randomize:hover,
-.controls__export:hover {
-  background: var(--surface-pressed);
-  color: var(--text);
-  transform: translateY(-1px);
 }
 
 /* ── Focus ── */
@@ -462,11 +439,10 @@ canvas {
     gap: 8px;
   }
 
-  .controls__footer {
-    grid-template-columns: 1fr;
-  }
-
-  .controls__clear {
+  .controls__clear,
+  .controls__undo,
+  .controls__randomize,
+  .controls__export {
     min-height: 44px;
   }
 }

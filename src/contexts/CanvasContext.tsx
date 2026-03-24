@@ -71,7 +71,11 @@ export function CanvasProvider({ children }: { children: ReactNode }) {
     const offscreen = document.createElement("canvas");
     offscreen.width = w;
     offscreen.height = h;
-    const ctx = offscreen.getContext("2d");
+    // Use display-p3 to match the browser's wide-color rendering of the WebGPU
+    // canvas — prevents desaturation when compositing on P3 displays.
+    const ctx =
+      offscreen.getContext("2d", { colorSpace: "display-p3" }) ??
+      offscreen.getContext("2d");
     if (!ctx) return;
 
     const composite = () => {

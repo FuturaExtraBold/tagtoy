@@ -37,6 +37,7 @@ function buildJoins(
   pts: Point[],
   r: number,
   out: number[],
+  radii?: number[],
 ): Array<[[number, number], [number, number]]> {
   const n = pts.length;
   const segs = n - 1;
@@ -114,7 +115,8 @@ function buildJoins(
         if (arc < 0) arc += Math.PI * 2; // ensure CCW sweep
       }
 
-      // Fan triangles to fill the arc gap
+      // Fan triangles to fill the arc gap (use local radius if provided)
+      const fanR = radii ? radii[i] : r;
       const steps = Math.max(2, Math.ceil(Math.abs(arc) / (Math.PI / 8)));
       for (let k = 0; k < steps; k++) {
         const fa = a0 + arc * (k / steps);
@@ -122,10 +124,10 @@ function buildJoins(
         out.push(
           p.x,
           p.y,
-          p.x + Math.cos(fa) * r,
-          p.y + Math.sin(fa) * r,
-          p.x + Math.cos(fb) * r,
-          p.y + Math.sin(fb) * r,
+          p.x + Math.cos(fa) * fanR,
+          p.y + Math.sin(fa) * fanR,
+          p.x + Math.cos(fb) * fanR,
+          p.y + Math.sin(fb) * fanR,
         );
       }
     }
@@ -267,14 +269,14 @@ export function tessellateBubble(
   const rMin = rMax * 0.04;
   const out: number[] = [];
 
-  // Per-point radius following a sine envelope
+  // Per-point radius: raised-sine envelope — exponent < 1 keeps center fatter
   const radii: number[] = pts.map((_, i) => {
     const t = i / (n - 1);
-    return rMin + (rMax - rMin) * Math.sin(Math.PI * t);
+    return rMin + (rMax - rMin) * Math.pow(Math.sin(Math.PI * t), 0.35);
   });
 
-  // buildJoins uses rMax for arc fans — minor approximation at tapered ends
-  const joins = buildJoins(pts, rMax, out);
+  // Pass radii so arc fans at corners scale to local width, not always rMax
+  const joins = buildJoins(pts, rMax, out, radii);
 
   for (let i = 0; i < n - 1; i++) {
     const p0 = pts[i],

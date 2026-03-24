@@ -14,7 +14,6 @@ export function ControlPanel() {
   return (
     <div className="controls">
       <div className="controls__shell">
-        <p className="controls__eyebrow">Paint Controls</p>
         <div className="ctrl-menu">
           <StyleRow />
           <BrushRow />
@@ -23,16 +22,14 @@ export function ControlPanel() {
           {activeStyle === "tag" ? <TagRow /> : <FillRow />}
           <TextureRow />
         </div>
-        <div className="controls__footer">
+        <div className="controls__actions">
           <button className="controls__clear" type="button" onClick={clear}>
             Clear
           </button>
           <button className="controls__undo" type="button" onClick={undo}>
             <span>Undo</span>
-            <span className="controls__undo-hint">Press Z</span>
+            <span className="controls__undo-hint">⌘Z</span>
           </button>
-        </div>
-        <div className="controls__actions">
           <RandomizeButton />
           <button
             className="controls__export"

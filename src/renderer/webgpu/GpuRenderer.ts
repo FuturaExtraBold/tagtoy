@@ -483,12 +483,19 @@ export class GpuRenderer {
       const [sx, sy] = shadowCoords(cfg);
       const seed = seedFor(s);
 
-      // Shadow
+      // Shadow — uniform round stroke so shadow is consistent
       if (cfg.shadowOffset > 0) {
         if (cfg.shadowAttached) {
-          this.extrudeBubble(s, cfg.outlineSize, sx, sy, cfg.shadowColor);
+          this.extrude(
+            s,
+            cfg.outlineSize,
+            cfg.brushType,
+            sx,
+            sy,
+            cfg.shadowColor,
+          );
         } else {
-          this.push(tessellateBubble(p, cfg.outlineSize), {
+          this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
             color: hex4(cfg.shadowColor),
             offset: [sx, sy],
           });
@@ -508,8 +515,8 @@ export class GpuRenderer {
           );
         }
       }
-      // Outline
-      this.push(tessellateBubble(p, cfg.outlineSize), {
+      // Outline — uniform round stroke for consistent ring width
+      this.push(tessellateStroke(p, cfg.outlineSize, cfg.brushType), {
         color: hex4(cfg.outlineColor),
       });
       if (cfg.showDrips && dripProg !== undefined) {
@@ -524,7 +531,7 @@ export class GpuRenderer {
           { color: hex4(cfg.outlineColor) },
         );
       }
-      // Fill
+      // Fill — bubble tessellation: tapers at ends
       this.push(tessellateBubble(p, cfg.brushSize), {
         color: hex4(cfg.throwupColor),
       });
@@ -776,25 +783,6 @@ export class GpuRenderer {
     if (dist < 1) return;
     const steps = Math.min(20, Math.ceil(dist / Math.max(1, lineWidth * 0.4)));
     const verts = tessellateStroke(p, lineWidth, brushType);
-    const c = hex4(color);
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      this.push(verts, { color: c, offset: [sx * t, sy * t] });
-    }
-  }
-
-  private extrudeBubble(
-    stroke: Stroke,
-    lineWidth: number,
-    sx: number,
-    sy: number,
-    color: string,
-  ): void {
-    const p = pts(stroke);
-    const dist = Math.hypot(sx, sy);
-    if (dist < 1) return;
-    const steps = Math.min(20, Math.ceil(dist / Math.max(1, lineWidth * 0.4)));
-    const verts = tessellateBubble(p, lineWidth);
     const c = hex4(color);
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;

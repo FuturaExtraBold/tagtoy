@@ -10,21 +10,12 @@ const BACKGROUNDS = [
   "bodega.jpg",
 ];
 
-const OUTLINE_COLORS = [
-  "#000000",
-  "#0d0d2b",
-  "#0b1a0b",
-  "#1a000d",
-  "#0a1a2e",
-  "#1a0d00",
-  "#1a001a",
-];
-
 function hslToHex(h: number, s: number, l: number): string {
-  const a = (s * Math.min(l, 1 - l)) / 100;
+  const lf = l / 100;
+  const a = (s / 100) * Math.min(lf, 1 - lf);
   const f = (n: number) => {
     const k = (n + h / 30) % 12;
-    const c = l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    const c = lf - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
     return Math.round(255 * c)
       .toString(16)
       .padStart(2, "0");
@@ -42,26 +33,45 @@ function randomVividHex(excludeHue?: number): [string, number] {
   return [hslToHex(h, s, l), h];
 }
 
+// Dark but visibly hued — for outline and shadow layers
+function randomDarkHex(excludeHue?: number): [string, number] {
+  let h: number;
+  do {
+    h = Math.floor(Math.random() * 360);
+  } while (excludeHue !== undefined && Math.abs(h - excludeHue) < 40);
+  const s = 50 + Math.random() * 40;
+  const l = 12 + Math.random() * 18;
+  return [hslToHex(h, s, l), h];
+}
+
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
 export function RandomizeButton() {
-  const { setBackground, activeStyle } = useCanvas();
-  const { setGradientStart, setGradientEnd, setOutlineColor, setTagColor } =
-    useStyle();
+  const { setBackground } = useCanvas();
+  const {
+    setGradientStart,
+    setGradientEnd,
+    setOutlineColor,
+    setShadowColor,
+    setTagColor,
+    setThrowupColor,
+  } = useStyle();
 
   const handleRandomize = () => {
     const [startHex, startHue] = randomVividHex();
     const [endHex] = randomVividHex(startHue);
+    const [fillHex] = randomVividHex(startHue);
+    const [outlineHex, outlineHue] = randomDarkHex();
+    const [shadowHex] = randomDarkHex(outlineHue);
     setGradientStart(startHex);
     setGradientEnd(endHex);
-    setOutlineColor(pick(OUTLINE_COLORS));
+    setThrowupColor(fillHex);
+    setTagColor(fillHex);
+    setOutlineColor(outlineHex);
+    setShadowColor(shadowHex);
     setBackground(pick(BACKGROUNDS));
-    if (activeStyle === "tag") {
-      const [tagHex] = randomVividHex();
-      setTagColor(tagHex);
-    }
   };
 
   return (
