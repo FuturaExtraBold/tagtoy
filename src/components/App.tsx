@@ -18,11 +18,11 @@ function AppInner() {
   useKeyboardShortcuts({ undo });
 
   return (
-    <>
+    <main>
       <Canvas />
       <ControlPanel />
       <div ref={cursorRef} className="cursor" />
-    </>
+    </main>
   );
 }
 
